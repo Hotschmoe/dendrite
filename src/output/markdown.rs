@@ -10,10 +10,11 @@ use crate::graph::analysis::AnalysisResult;
 use crate::graph::{DepGraph, Layer};
 use crate::output::json::CodebaseMap;
 use handlebars::Handlebars;
+use petgraph::graph::NodeIndex;
 use petgraph::visit::EdgeRef;
 use petgraph::Direction;
 use serde::Serialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
@@ -116,6 +117,7 @@ impl CodebaseTemplate {
         let files = build_file_entries(graph, analysis);
         let alerts = build_alerts(analysis);
         let layers = build_layer_info();
+        let has_alerts = !alerts.is_empty();
 
         Self {
             project_name,
@@ -123,9 +125,9 @@ impl CodebaseTemplate {
             overview,
             mermaid_diagram,
             files,
-            alerts: alerts.clone(),
+            alerts,
             layers,
-            has_alerts: !alerts.is_empty(),
+            has_alerts,
         }
     }
 }
@@ -173,7 +175,7 @@ fn build_overview(
 
 /// Build file entries for the index table.
 fn build_file_entries(graph: &DepGraph, analysis: &AnalysisResult) -> Vec<FileEntry> {
-    let cycle_files: std::collections::HashSet<&str> = analysis
+    let cycle_files: HashSet<&str> = analysis
         .cycles
         .iter()
         .flat_map(|c| c.nodes.iter().map(|s| s.as_str()))
@@ -294,14 +296,14 @@ pub fn generate_mermaid(graph: &DepGraph, analysis: &AnalysisResult, max_nodes: 
         return "```mermaid\nflowchart LR\n  empty[No files found]\n```".to_string();
     }
 
-    let cycle_files: std::collections::HashSet<&str> = analysis
+    let cycle_files: HashSet<&str> = analysis
         .cycles
         .iter()
         .flat_map(|c| c.nodes.iter().map(|s| s.as_str()))
         .collect();
 
     // Score nodes by importance (fan-in + fan-out)
-    let mut node_scores: Vec<(petgraph::graph::NodeIndex, usize)> = graph
+    let mut node_scores: Vec<(NodeIndex, usize)> = graph
         .node_indices()
         .map(|idx| {
             let fan_in = graph.edges_directed(idx, Direction::Incoming).count();
@@ -313,8 +315,7 @@ pub fn generate_mermaid(graph: &DepGraph, analysis: &AnalysisResult, max_nodes: 
     node_scores.sort_by(|a, b| b.1.cmp(&a.1));
 
     // Select top N nodes, but always include cycle nodes
-    let mut selected: std::collections::HashSet<petgraph::graph::NodeIndex> =
-        std::collections::HashSet::new();
+    let mut selected: HashSet<NodeIndex> = HashSet::new();
 
     // First, add all cycle nodes
     for idx in graph.node_indices() {
@@ -334,7 +335,7 @@ pub fn generate_mermaid(graph: &DepGraph, analysis: &AnalysisResult, max_nodes: 
     let mut lines = vec!["```mermaid".to_string(), "flowchart LR".to_string()];
 
     // Create node ID mapping
-    let node_ids: HashMap<petgraph::graph::NodeIndex, String> = selected
+    let node_ids: HashMap<NodeIndex, String> = selected
         .iter()
         .map(|&idx| {
             let safe_id = sanitize_mermaid_id(&graph[idx].relative_path);
