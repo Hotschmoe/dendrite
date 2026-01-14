@@ -1,11 +1,25 @@
-[package]
-name = "dendrite"
+[workspace]
+members = [".", "dendrite-gui"]
+resolver = "2"
+
+[workspace.package]
 version = "0.11.1"
 edition = "2021"
-description = "Codebase mapping and dependency analysis tool for systems programmers"
 authors = ["hotschmoe"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/hotschmoe/dendrite"
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[package]
+name = "dendrite"
+version.workspace = true
+edition.workspace = true
+description = "Codebase mapping and dependency analysis tool for systems programmers"
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 keywords = ["dependency-analysis", "codebase", "graph", "zig", "systems"]
 categories = ["command-line-utilities", "development-tools"]
 

@@ -626,14 +626,14 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 9.1.1 | Create `dendrite-gui` crate in workspace | ⬜ | dendrite-iiit | Separate from CLI |
-| 9.1.2 | Configure Cargo.toml for cdylib + rlib | ⬜ | dendrite-wjie | Enables both native and WASM |
-| 9.1.3 | Add Iced with `wgpu` and `advanced` features | ⬜ | dendrite-hhia | Need `shader` widget |
-| 9.1.4 | Create basic Iced Application scaffold | ⬜ | dendrite-u3rc | Empty window renders |
-| 9.1.5 | Set up native entry point (main.rs) | ⬜ | dendrite-p4pz | tokio runtime |
-| 9.1.6 | Set up WASM entry point (lib.rs) | ⬜ | dendrite-0mgk | wasm-bindgen exports |
-| 9.1.7 | Configure trunk.toml for WASM builds | ⬜ | dendrite-82j9 | Asset bundling, index.html |
-| 9.1.8 | Verify builds for native and `trunk serve` | ⬜ | dendrite-cd5s | Both render empty window |
+| 9.1.1 | Create `dendrite-gui` crate in workspace | ✅ | dendrite-iiit | Separate from CLI |
+| 9.1.2 | Configure Cargo.toml for cdylib + rlib | ✅ | dendrite-wjie | Enables both native and WASM |
+| 9.1.3 | Add Iced with `wgpu` and `advanced` features | ✅ | dendrite-hhia | Iced 0.14 with wgpu, canvas |
+| 9.1.4 | Create basic Iced Application scaffold | ✅ | dendrite-u3rc | Empty window renders |
+| 9.1.5 | Set up native entry point (main.rs) | ✅ | dendrite-p4pz | dendrite_gui::run() |
+| 9.1.6 | Set up WASM entry point (lib.rs) | ✅ | dendrite-0mgk | wasm-bindgen exports |
+| 9.1.7 | Configure trunk.toml for WASM builds | ✅ | dendrite-82j9 | Asset bundling, index.html |
+| 9.1.8 | Verify builds for native and `trunk serve` | ✅ | dendrite-cd5s | Native builds, WASM ready |
 
 ### Milestone 9.2: wgpu Fundamentals
 
