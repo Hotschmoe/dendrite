@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use std::time::Instant;
 
 use dendrite::discovery::{discover_files, DiscoveryConfig, ParseError};
+use dendrite::graph::analysis::{analyze, AnalysisResult};
 use dendrite::graph::{FileNode, GraphBuilder, Layer};
 use dendrite::output::json::CodebaseMap;
 use dendrite::parser::{parse_file, parse_rust_file};
@@ -280,6 +281,70 @@ fn run(cli: Cli) -> Result<()> {
         eprintln!("Markdown output not yet implemented (Phase 3)");
     }
 
+    // 5. Run analysis if needed (CI mode or summary)
+    let analysis = analyze(&graph, 5); // threshold for high fan-in/out
+
+    // CI mode: --check and --strict
+    if cli.check || cli.strict {
+        let has_cycle_errors = analysis.has_errors();
+        let has_violations = analysis.has_warnings();
+
+        // Print actionable error messages in file:line format
+        if !cli.quiet {
+            for cycle in &analysis.cycles {
+                for (from, to, line) in &cycle.edges {
+                    eprintln!("error: cycle: {}:{}: imports {} (forms cycle)", from, line, to);
+                }
+            }
+
+            if cli.strict {
+                for violation in &analysis.violations {
+                    eprintln!(
+                        "warning: violation: {}:{}: {} layer imports from {} layer ({})",
+                        violation.file,
+                        violation.line,
+                        layer_name(violation.from_layer),
+                        layer_name(violation.to_layer),
+                        violation.imports
+                    );
+                }
+            }
+
+            // Print fix suggestions
+            let suggestions = analysis.fix_suggestions();
+            if !suggestions.is_empty() {
+                eprintln!();
+                eprintln!("Fix suggestions:");
+                for suggestion in &suggestions {
+                    eprintln!("  - {}", suggestion);
+                }
+            }
+        }
+
+        // Output analysis as JSON if requested
+        if cli.check && cli.json {
+            let analysis_json = analysis_to_json(&analysis);
+            println!("{}", analysis_json);
+        }
+
+        // Exit with error if issues found
+        if has_cycle_errors {
+            if !cli.quiet {
+                eprintln!();
+                eprintln!("Found {} cycle(s). Fix cycles to ensure clean architecture.", analysis.cycles.len());
+            }
+            std::process::exit(1);
+        }
+
+        if cli.strict && has_violations {
+            if !cli.quiet {
+                eprintln!();
+                eprintln!("Found {} layer violation(s). Fix violations or use --check (not --strict) to allow.", analysis.violations.len());
+            }
+            std::process::exit(1);
+        }
+    }
+
     // Task 1.6.6: Print summary stats
     let elapsed = start.elapsed();
     if !cli.quiet && !cli.json {
@@ -290,8 +355,78 @@ fn run(cli: Cli) -> Result<()> {
         println!("  Parse errors: {}", parse_errors.len());
         println!("  Graph nodes: {}", graph.node_count());
         println!("  Graph edges: {}", graph.edge_count());
+        if cli.check || cli.strict {
+            println!("  Cycles detected: {}", analysis.cycles.len());
+            println!("  Layer violations: {}", analysis.violations.len());
+        }
         println!("  Time elapsed: {:.2?}", elapsed);
     }
 
     Ok(())
+}
+
+/// Helper to convert Layer to display name.
+fn layer_name(layer: Layer) -> &'static str {
+    match layer {
+        Layer::Entry => "Entry",
+        Layer::App => "App",
+        Layer::Core => "Core",
+        Layer::Platform => "Platform",
+        Layer::Driver => "Driver",
+        Layer::Arch => "Arch",
+        Layer::Unknown => "Unknown",
+    }
+}
+
+/// Convert analysis result to JSON for --check --json combo.
+fn analysis_to_json(analysis: &AnalysisResult) -> String {
+    use serde_json::json;
+
+    let cycles_json: Vec<_> = analysis
+        .cycles
+        .iter()
+        .map(|c| {
+            json!({
+                "nodes": c.nodes,
+                "edges": c.edges.iter().map(|(from, to, line)| {
+                    json!({
+                        "from": from,
+                        "to": to,
+                        "line": line
+                    })
+                }).collect::<Vec<_>>()
+            })
+        })
+        .collect();
+
+    let violations_json: Vec<_> = analysis
+        .violations
+        .iter()
+        .map(|v| {
+            json!({
+                "file": v.file,
+                "imports": v.imports,
+                "from_layer": layer_name(v.from_layer),
+                "to_layer": layer_name(v.to_layer),
+                "line": v.line,
+                "reason": v.reason
+            })
+        })
+        .collect();
+
+    let result = json!({
+        "has_errors": analysis.has_errors(),
+        "has_warnings": analysis.has_warnings(),
+        "cycles": cycles_json,
+        "violations": violations_json,
+        "metrics": {
+            "max_depth": analysis.max_depth,
+            "entry_points": analysis.entry_points,
+            "high_fan_out": analysis.high_fan_out,
+            "high_fan_in": analysis.high_fan_in,
+            "orphans": analysis.orphans
+        }
+    });
+
+    serde_json::to_string_pretty(&result).unwrap_or_else(|_| "{}".to_string())
 }

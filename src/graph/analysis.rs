@@ -33,6 +33,104 @@ pub struct CycleEdge {
     pub line: usize,
 }
 
+/// A layer rule violation in the dependency graph.
+///
+/// Occurs when a file in one layer imports a file from a layer it shouldn't
+/// depend on (e.g., a driver importing from the app layer).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LayerViolation {
+    /// File that contains the violating import
+    pub file: String,
+    /// File being imported
+    pub imports: String,
+    /// Layer of the importing file
+    pub from_layer: Layer,
+    /// Layer of the imported file
+    pub to_layer: Layer,
+    /// Line number where the import occurs
+    pub line: usize,
+    /// Human-readable explanation of why this is a violation
+    pub reason: String,
+}
+
+impl LayerViolation {
+    /// Create a new layer violation with an auto-generated reason.
+    fn new(file: String, imports: String, from_layer: Layer, to_layer: Layer, line: usize) -> Self {
+        let reason = format!(
+            "{} layer cannot import from {} layer",
+            layer_name(from_layer),
+            layer_name(to_layer)
+        );
+        Self {
+            file,
+            imports,
+            from_layer,
+            to_layer,
+            line,
+            reason,
+        }
+    }
+
+    /// Create a fix suggestion for this violation.
+    pub fn fix_suggestion(&self) -> String {
+        format!(
+            "Move {} to the {} layer, or remove the import of {}",
+            self.file,
+            layer_name(self.to_layer),
+            self.imports
+        )
+    }
+}
+
+/// Get the precedence/depth of a layer in the architecture hierarchy.
+///
+/// Lower numbers are "higher" in the stack (closer to entry):
+/// - Entry (0) -> App (1) -> Core (2) -> Platform (3) -> Driver (4) -> Arch (5)
+///
+/// The rule is: a layer can only import from layers at the same level or LOWER
+/// (higher precedence number). For example:
+/// - Core (2) can import from Platform (3), Driver (4), Arch (5)
+/// - Core (2) CANNOT import from App (1) or Entry (0)
+fn layer_precedence(layer: Layer) -> u8 {
+    match layer {
+        Layer::Entry => 0,
+        Layer::App => 1,
+        Layer::Core => 2,
+        Layer::Platform => 3,
+        Layer::Driver => 4,
+        Layer::Arch => 5,
+        Layer::Unknown => 6, // Unknown can import from anything
+    }
+}
+
+/// Get the human-readable name of a layer.
+fn layer_name(layer: Layer) -> &'static str {
+    match layer {
+        Layer::Entry => "Entry",
+        Layer::App => "App",
+        Layer::Core => "Core",
+        Layer::Platform => "Platform",
+        Layer::Driver => "Driver",
+        Layer::Arch => "Arch",
+        Layer::Unknown => "Unknown",
+    }
+}
+
+/// Check if an import from one layer to another violates layer rules.
+///
+/// Default rule: A layer can only import from layers at the same level or lower
+/// in the hierarchy (higher precedence number).
+fn is_layer_violation(from_layer: Layer, to_layer: Layer) -> bool {
+    // Unknown layer gets a pass - we can't enforce rules on it
+    if from_layer == Layer::Unknown || to_layer == Layer::Unknown {
+        return false;
+    }
+
+    // Violation if importing from a layer that's "above" us in the hierarchy
+    // (has lower precedence number)
+    layer_precedence(from_layer) > layer_precedence(to_layer)
+}
+
 /// Result of cycle detection analysis.
 #[derive(Debug, Clone)]
 pub struct CycleAnalysis {
@@ -51,6 +149,8 @@ pub struct AnalysisResult {
     pub cycles: Vec<Cycle>,
     /// All edges participating in cycles
     pub cycle_edges: Vec<CycleEdge>,
+    /// Layer rule violations
+    pub violations: Vec<LayerViolation>,
     /// Maximum depth from entry points
     pub max_depth: usize,
     /// Path from entry to deepest node
@@ -71,9 +171,35 @@ impl AnalysisResult {
         !self.cycles.is_empty()
     }
 
-    /// Get the total number of issues found.
+    /// Check if there are any warnings (layer violations).
+    pub fn has_warnings(&self) -> bool {
+        !self.violations.is_empty()
+    }
+
+    /// Get the total number of issues found (cycles + violations).
     pub fn issue_count(&self) -> usize {
-        self.cycles.len()
+        self.cycles.len() + self.violations.len()
+    }
+
+    /// Get fix suggestions for all issues.
+    pub fn fix_suggestions(&self) -> Vec<String> {
+        let mut suggestions = Vec::new();
+
+        for cycle in &self.cycles {
+            if !cycle.edges.is_empty() {
+                let (from, to, line) = &cycle.edges[0];
+                suggestions.push(format!(
+                    "Break cycle by removing import at {}:{} (imports {})",
+                    from, line, to
+                ));
+            }
+        }
+
+        for violation in &self.violations {
+            suggestions.push(violation.fix_suggestion());
+        }
+
+        suggestions
     }
 }
 
@@ -241,10 +367,11 @@ pub fn calculate_depths(graph: &DepGraph) -> HashMap<NodeIndex, usize> {
         depths.insert(entry, 0);
     }
 
-    // BFS to propagate depths
-    let mut changed = true;
-    while changed {
-        changed = false;
+    // BFS to propagate depths (limited iterations to handle cycles)
+    // In a DAG, max iterations = node_count. With cycles, we cap to avoid infinite loop.
+    let max_iterations = graph.node_count();
+    for _ in 0..max_iterations {
+        let mut changed = false;
         for node_idx in graph.node_indices() {
             let current_depth = depths.get(&node_idx).copied();
 
@@ -257,6 +384,9 @@ pub fn calculate_depths(graph: &DepGraph) -> HashMap<NodeIndex, usize> {
                     changed = true;
                 }
             }
+        }
+        if !changed {
+            break;
         }
     }
 
@@ -353,12 +483,41 @@ pub fn find_orphans(graph: &DepGraph) -> Vec<String> {
         .collect()
 }
 
+/// Find all layer rule violations in the dependency graph.
+///
+/// Checks each edge against the layer hierarchy rules:
+/// - A layer can only import from layers at the same level or lower
+/// - Entry (0) -> App (1) -> Core (2) -> Platform (3) -> Driver (4) -> Arch (5)
+///
+/// For example, a Driver file cannot import from App or Core layers.
+pub fn find_violations(graph: &DepGraph) -> Vec<LayerViolation> {
+    let mut violations = Vec::new();
+
+    for edge in graph.raw_edges() {
+        let source_node = &graph[edge.source()];
+        let target_node = &graph[edge.target()];
+
+        if is_layer_violation(source_node.layer, target_node.layer) {
+            violations.push(LayerViolation::new(
+                source_node.relative_path.clone(),
+                target_node.relative_path.clone(),
+                source_node.layer,
+                target_node.layer,
+                edge.weight.line,
+            ));
+        }
+    }
+
+    violations
+}
+
 /// Perform complete analysis of a dependency graph.
 ///
 /// This is the main entry point for analysis, running all analyses and
 /// combining results into a single AnalysisResult.
 pub fn analyze(graph: &DepGraph, fan_threshold: usize) -> AnalysisResult {
     let cycle_analysis = find_cycles(graph);
+    let violations = find_violations(graph);
     let depths = calculate_depths(graph);
     let max_depth = depths.values().copied().max().unwrap_or(0);
     let deepest_path = find_deepest_path(graph);
@@ -381,6 +540,7 @@ pub fn analyze(graph: &DepGraph, fan_threshold: usize) -> AnalysisResult {
     AnalysisResult {
         cycles: cycle_analysis.cycles,
         cycle_edges: cycle_analysis.cycle_edges,
+        violations,
         max_depth,
         deepest_path,
         high_fan_out,
@@ -690,5 +850,186 @@ mod tests {
         assert!(result.cycles.is_empty());
         assert!(!result.entry_points.is_empty());
         assert!(!result.has_errors());
+    }
+
+    fn create_test_node_with_layer(builder: &mut GraphBuilder, name: &str, layer: Layer) {
+        let node = FileNode {
+            path: PathBuf::from(format!("/project/{}", name)),
+            relative_path: name.to_string(),
+            layer,
+            depth: 0,
+            summary: None,
+            exports: vec![],
+            loc: 10,
+        };
+        builder.add_file(node);
+    }
+
+    // Test 2.5.3: Valid hierarchy (no violations)
+    #[test]
+    fn test_no_violations_in_valid_hierarchy() {
+        let mut builder = GraphBuilder::new(PathBuf::from("/project"), false);
+
+        // Entry -> App -> Core -> Platform (valid flow down the hierarchy)
+        create_test_node_with_layer(&mut builder, "main.zig", Layer::Entry);
+        create_test_node_with_layer(&mut builder, "shell/app.zig", Layer::App);
+        create_test_node_with_layer(&mut builder, "kernel/core.zig", Layer::Core);
+        create_test_node_with_layer(&mut builder, "platform/x86.zig", Layer::Platform);
+
+        let mut import_map = std::collections::HashMap::new();
+        import_map.insert(
+            PathBuf::from("/project/main.zig"),
+            vec![("shell/app.zig".to_string(), 1)],
+        );
+        import_map.insert(
+            PathBuf::from("/project/shell/app.zig"),
+            vec![("kernel/core.zig".to_string(), 1)],
+        );
+        import_map.insert(
+            PathBuf::from("/project/kernel/core.zig"),
+            vec![("platform/x86.zig".to_string(), 1)],
+        );
+
+        builder.add_edges(&import_map);
+        let graph = builder.build();
+        let violations = find_violations(&graph);
+
+        assert!(violations.is_empty(), "Valid hierarchy should have no violations");
+    }
+
+    // Test 2.5.3: Violations detected
+    #[test]
+    fn test_layer_violations_detected() {
+        let mut builder = GraphBuilder::new(PathBuf::from("/project"), false);
+
+        // Driver importing from App layer (violation!)
+        create_test_node_with_layer(&mut builder, "drivers/uart.zig", Layer::Driver);
+        create_test_node_with_layer(&mut builder, "shell/app.zig", Layer::App);
+
+        let mut import_map = std::collections::HashMap::new();
+        import_map.insert(
+            PathBuf::from("/project/drivers/uart.zig"),
+            vec![("shell/app.zig".to_string(), 5)],
+        );
+
+        builder.add_edges(&import_map);
+        let graph = builder.build();
+        let violations = find_violations(&graph);
+
+        assert_eq!(violations.len(), 1, "Should detect 1 violation");
+        let v = &violations[0];
+        assert_eq!(v.file, "drivers/uart.zig");
+        assert_eq!(v.imports, "shell/app.zig");
+        assert_eq!(v.from_layer, Layer::Driver);
+        assert_eq!(v.to_layer, Layer::App);
+        assert_eq!(v.line, 5);
+    }
+
+    // Test 2.5.3: Multiple violations
+    #[test]
+    fn test_multiple_layer_violations() {
+        let mut builder = GraphBuilder::new(PathBuf::from("/project"), false);
+
+        // Arch imports from Entry and App (two violations)
+        create_test_node_with_layer(&mut builder, "arch/x86_64.zig", Layer::Arch);
+        create_test_node_with_layer(&mut builder, "main.zig", Layer::Entry);
+        create_test_node_with_layer(&mut builder, "shell/app.zig", Layer::App);
+
+        let mut import_map = std::collections::HashMap::new();
+        import_map.insert(
+            PathBuf::from("/project/arch/x86_64.zig"),
+            vec![
+                ("main.zig".to_string(), 1),
+                ("shell/app.zig".to_string(), 2),
+            ],
+        );
+
+        builder.add_edges(&import_map);
+        let graph = builder.build();
+        let violations = find_violations(&graph);
+
+        assert_eq!(violations.len(), 2, "Should detect 2 violations");
+    }
+
+    // Test 2.5.4: Unknown layer is allowed
+    #[test]
+    fn test_unknown_layer_no_violations() {
+        let mut builder = GraphBuilder::new(PathBuf::from("/project"), false);
+
+        // Unknown importing from Entry (should be allowed)
+        create_test_node_with_layer(&mut builder, "utils.zig", Layer::Unknown);
+        create_test_node_with_layer(&mut builder, "main.zig", Layer::Entry);
+
+        let mut import_map = std::collections::HashMap::new();
+        import_map.insert(
+            PathBuf::from("/project/utils.zig"),
+            vec![("main.zig".to_string(), 1)],
+        );
+
+        builder.add_edges(&import_map);
+        let graph = builder.build();
+        let violations = find_violations(&graph);
+
+        assert!(violations.is_empty(), "Unknown layer should not trigger violations");
+    }
+
+    // Test 2.5.4: Same layer imports allowed
+    #[test]
+    fn test_same_layer_no_violations() {
+        let mut builder = GraphBuilder::new(PathBuf::from("/project"), false);
+
+        // Core importing from Core (same layer - allowed)
+        create_test_node_with_layer(&mut builder, "kernel/scheduler.zig", Layer::Core);
+        create_test_node_with_layer(&mut builder, "kernel/memory.zig", Layer::Core);
+
+        let mut import_map = std::collections::HashMap::new();
+        import_map.insert(
+            PathBuf::from("/project/kernel/scheduler.zig"),
+            vec![("kernel/memory.zig".to_string(), 1)],
+        );
+
+        builder.add_edges(&import_map);
+        let graph = builder.build();
+        let violations = find_violations(&graph);
+
+        assert!(violations.is_empty(), "Same layer imports should not trigger violations");
+    }
+
+    #[test]
+    fn test_violation_fix_suggestion() {
+        let violation = LayerViolation::new(
+            "drivers/uart.zig".to_string(),
+            "shell/app.zig".to_string(),
+            Layer::Driver,
+            Layer::App,
+            10,
+        );
+
+        let suggestion = violation.fix_suggestion();
+        assert!(suggestion.contains("drivers/uart.zig"));
+        assert!(suggestion.contains("shell/app.zig"));
+        assert!(suggestion.contains("App"));
+    }
+
+    #[test]
+    fn test_analysis_with_violations() {
+        let mut builder = GraphBuilder::new(PathBuf::from("/project"), false);
+
+        create_test_node_with_layer(&mut builder, "drivers/uart.zig", Layer::Driver);
+        create_test_node_with_layer(&mut builder, "shell/app.zig", Layer::App);
+
+        let mut import_map = std::collections::HashMap::new();
+        import_map.insert(
+            PathBuf::from("/project/drivers/uart.zig"),
+            vec![("shell/app.zig".to_string(), 5)],
+        );
+
+        builder.add_edges(&import_map);
+        let graph = builder.build();
+        let result = analyze(&graph, 3);
+
+        assert!(!result.has_errors(), "No cycles = no errors");
+        assert!(result.has_warnings(), "Should have warnings (violations)");
+        assert_eq!(result.violations.len(), 1);
     }
 }

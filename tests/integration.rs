@@ -146,3 +146,94 @@ fn test_parse_simple_fixture() {
     assert_eq!(graph.node_count(), 2, "Graph should have 2 nodes");
     assert!(graph.edge_count() >= 1, "Graph should have at least 1 edge");
 }
+
+// Task 2.7.5: CI pass case - clean codebase exits 0
+#[test]
+fn test_ci_pass_case() {
+    use std::process::Command;
+
+    let fixtures = fixtures_path().join("simple");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_dendrite"))
+        .args([
+            "--path",
+            fixtures.to_str().unwrap(),
+            "--check",
+            "--quiet",
+        ])
+        .output()
+        .expect("Failed to execute dendrite");
+
+    assert!(
+        output.status.success(),
+        "Clean codebase should exit 0 with --check. stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+// Task 2.7.6: CI fail case - cycle present exits 1
+#[test]
+fn test_ci_fail_case_with_cycle() {
+    use std::process::Command;
+
+    let fixtures = fixtures_path().join("with_cycle");
+
+    // Make sure the test fixture exists
+    assert!(fixtures.exists(), "with_cycle fixture should exist");
+    assert!(fixtures.join("a.zig").exists(), "a.zig should exist");
+    assert!(fixtures.join("b.zig").exists(), "b.zig should exist");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_dendrite"))
+        .args([
+            "--path",
+            fixtures.to_str().unwrap(),
+            "--check",
+            "--quiet",
+        ])
+        .output()
+        .expect("Failed to execute dendrite");
+
+    assert!(
+        !output.status.success(),
+        "Codebase with cycle should exit 1 with --check. exit code: {:?}",
+        output.status.code()
+    );
+
+    // The exit code should be 1
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "Exit code should be 1 for cycle detection"
+    );
+}
+
+// Task 2.7.4: --check --json combo
+#[test]
+fn test_ci_check_json_combo() {
+    use std::process::Command;
+
+    let fixtures = fixtures_path().join("simple");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_dendrite"))
+        .args([
+            "--path",
+            fixtures.to_str().unwrap(),
+            "--check",
+            "--json",
+            "--quiet",
+        ])
+        .output()
+        .expect("Failed to execute dendrite");
+
+    assert!(output.status.success(), "Clean codebase should pass");
+
+    // The stdout should contain valid JSON with analysis results
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let parsed: serde_json::Value = serde_json::from_str(&stdout)
+        .expect("--check --json should output valid JSON");
+
+    assert!(parsed.get("has_errors").is_some(), "Should have has_errors field");
+    assert!(parsed.get("cycles").is_some(), "Should have cycles field");
+    assert!(parsed.get("violations").is_some(), "Should have violations field");
+    assert_eq!(parsed["has_errors"], false, "Clean codebase should have no errors");
+}
