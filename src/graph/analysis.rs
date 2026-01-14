@@ -56,11 +56,7 @@ pub struct LayerViolation {
 impl LayerViolation {
     /// Create a new layer violation with an auto-generated reason.
     fn new(file: String, imports: String, from_layer: Layer, to_layer: Layer, line: usize) -> Self {
-        let reason = format!(
-            "{} layer cannot import from {} layer",
-            layer_name(from_layer),
-            layer_name(to_layer)
-        );
+        let reason = format!("{} layer cannot import from {} layer", from_layer, to_layer);
         Self {
             file,
             imports,
@@ -75,9 +71,7 @@ impl LayerViolation {
     pub fn fix_suggestion(&self) -> String {
         format!(
             "Move {} to the {} layer, or remove the import of {}",
-            self.file,
-            layer_name(self.to_layer),
-            self.imports
+            self.file, self.to_layer, self.imports
         )
     }
 }
@@ -100,19 +94,6 @@ fn layer_precedence(layer: Layer) -> u8 {
         Layer::Driver => 4,
         Layer::Arch => 5,
         Layer::Unknown => 6, // Unknown can import from anything
-    }
-}
-
-/// Get the human-readable name of a layer.
-fn layer_name(layer: Layer) -> &'static str {
-    match layer {
-        Layer::Entry => "Entry",
-        Layer::App => "App",
-        Layer::Core => "Core",
-        Layer::Platform => "Platform",
-        Layer::Driver => "Driver",
-        Layer::Arch => "Arch",
-        Layer::Unknown => "Unknown",
     }
 }
 

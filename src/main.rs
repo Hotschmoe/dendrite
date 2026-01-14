@@ -303,8 +303,8 @@ fn run(cli: Cli) -> Result<()> {
                         "warning: violation: {}:{}: {} layer imports from {} layer ({})",
                         violation.file,
                         violation.line,
-                        layer_name(violation.from_layer),
-                        layer_name(violation.to_layer),
+                        violation.from_layer,
+                        violation.to_layer,
                         violation.imports
                     );
                 }
@@ -365,19 +365,6 @@ fn run(cli: Cli) -> Result<()> {
     Ok(())
 }
 
-/// Helper to convert Layer to display name.
-fn layer_name(layer: Layer) -> &'static str {
-    match layer {
-        Layer::Entry => "Entry",
-        Layer::App => "App",
-        Layer::Core => "Core",
-        Layer::Platform => "Platform",
-        Layer::Driver => "Driver",
-        Layer::Arch => "Arch",
-        Layer::Unknown => "Unknown",
-    }
-}
-
 /// Convert analysis result to JSON for --check --json combo.
 fn analysis_to_json(analysis: &AnalysisResult) -> String {
     use serde_json::json;
@@ -406,8 +393,8 @@ fn analysis_to_json(analysis: &AnalysisResult) -> String {
             json!({
                 "file": v.file,
                 "imports": v.imports,
-                "from_layer": layer_name(v.from_layer),
-                "to_layer": layer_name(v.to_layer),
+                "from_layer": v.from_layer.to_string(),
+                "to_layer": v.to_layer.to_string(),
                 "line": v.line,
                 "reason": v.reason
             })

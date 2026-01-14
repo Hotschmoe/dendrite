@@ -25,6 +25,21 @@ pub enum Layer {
     Unknown,
 }
 
+impl std::fmt::Display for Layer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            Layer::Entry => "Entry",
+            Layer::App => "App",
+            Layer::Core => "Core",
+            Layer::Platform => "Platform",
+            Layer::Driver => "Driver",
+            Layer::Arch => "Arch",
+            Layer::Unknown => "Unknown",
+        };
+        write!(f, "{}", name)
+    }
+}
+
 impl Layer {
     /// Classify a file based on its relative path.
     ///
