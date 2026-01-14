@@ -387,7 +387,7 @@ fn truncate_filename(name: &str, max_width: usize) -> String {
 }
 
 /// Get the color for a layer.
-fn layer_color(layer: Layer) -> Color {
+pub fn layer_color(layer: Layer) -> Color {
     match layer {
         Layer::Entry => Color::Magenta,
         Layer::App => Color::Cyan,

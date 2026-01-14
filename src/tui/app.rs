@@ -107,91 +107,65 @@ impl App {
 
     /// Navigate to the next node in the current layer.
     pub fn select_next_in_layer(&mut self) {
-        if let Some(current_idx) = self.selected_node {
-            let current_node = &self.graph[current_idx];
-            let current_depth = current_node.depth;
-
-            // Find nodes at the same depth
-            let mut same_depth_nodes: Vec<_> = self
-                .graph
-                .node_indices()
-                .filter(|&idx| self.graph[idx].depth == current_depth)
-                .collect();
-
-            // Sort by relative path for consistent ordering
-            same_depth_nodes.sort_by_key(|&idx| &self.graph[idx].relative_path);
-
-            // Find current position and move to next
-            if let Some(pos) = same_depth_nodes.iter().position(|&idx| idx == current_idx) {
-                let next_pos = (pos + 1) % same_depth_nodes.len();
-                self.selected_node = Some(same_depth_nodes[next_pos]);
-                self.ensure_selected_visible();
-            }
-        }
+        self.navigate_in_layer(1);
     }
 
     /// Navigate to the previous node in the current layer.
     pub fn select_prev_in_layer(&mut self) {
-        if let Some(current_idx) = self.selected_node {
-            let current_node = &self.graph[current_idx];
-            let current_depth = current_node.depth;
+        self.navigate_in_layer(-1);
+    }
 
-            // Find nodes at the same depth
-            let mut same_depth_nodes: Vec<_> = self
-                .graph
-                .node_indices()
-                .filter(|&idx| self.graph[idx].depth == current_depth)
-                .collect();
+    /// Navigate within the current layer by the given offset (positive = next, negative = previous).
+    fn navigate_in_layer(&mut self, offset: isize) {
+        let Some(current_idx) = self.selected_node else { return };
+        let current_depth = self.graph[current_idx].depth;
 
-            // Sort by relative path for consistent ordering
-            same_depth_nodes.sort_by_key(|&idx| &self.graph[idx].relative_path);
+        let mut same_depth_nodes: Vec<_> = self
+            .graph
+            .node_indices()
+            .filter(|&idx| self.graph[idx].depth == current_depth)
+            .collect();
 
-            // Find current position and move to previous
-            if let Some(pos) = same_depth_nodes.iter().position(|&idx| idx == current_idx) {
-                let prev_pos = if pos == 0 {
-                    same_depth_nodes.len() - 1
-                } else {
-                    pos - 1
-                };
-                self.selected_node = Some(same_depth_nodes[prev_pos]);
-                self.ensure_selected_visible();
-            }
+        same_depth_nodes.sort_by_key(|&idx| &self.graph[idx].relative_path);
+
+        if let Some(pos) = same_depth_nodes.iter().position(|&idx| idx == current_idx) {
+            let len = same_depth_nodes.len() as isize;
+            let new_pos = ((pos as isize + offset) % len + len) % len;
+            self.selected_node = Some(same_depth_nodes[new_pos as usize]);
+            self.ensure_selected_visible();
         }
     }
 
     /// Navigate to a node in the next layer (deeper).
     pub fn select_next_layer(&mut self) {
-        if let Some(current_idx) = self.selected_node {
-            let current_depth = self.graph[current_idx].depth;
-
-            // Find first node at next depth level
-            if let Some(next_node) = self
-                .graph
-                .node_indices()
-                .find(|&idx| self.graph[idx].depth == current_depth + 1)
-            {
-                self.selected_node = Some(next_node);
-                self.ensure_selected_visible();
-            }
-        }
+        self.navigate_to_layer(1);
     }
 
     /// Navigate to a node in the previous layer (shallower).
     pub fn select_prev_layer(&mut self) {
-        if let Some(current_idx) = self.selected_node {
-            let current_depth = self.graph[current_idx].depth;
+        self.navigate_to_layer(-1);
+    }
 
-            if current_depth > 0 {
-                // Find first node at previous depth level
-                if let Some(prev_node) = self
-                    .graph
-                    .node_indices()
-                    .find(|&idx| self.graph[idx].depth == current_depth - 1)
-                {
-                    self.selected_node = Some(prev_node);
-                    self.ensure_selected_visible();
-                }
-            }
+    /// Navigate to a different layer by the given offset (positive = deeper, negative = shallower).
+    fn navigate_to_layer(&mut self, offset: isize) {
+        let Some(current_idx) = self.selected_node else { return };
+        let current_depth = self.graph[current_idx].depth;
+
+        let target_depth = if offset > 0 {
+            current_depth + offset as usize
+        } else {
+            current_depth.saturating_sub((-offset) as usize)
+        };
+
+        if target_depth == current_depth { return; }
+
+        if let Some(node) = self
+            .graph
+            .node_indices()
+            .find(|&idx| self.graph[idx].depth == target_depth)
+        {
+            self.selected_node = Some(node);
+            self.ensure_selected_visible();
         }
     }
 
@@ -272,22 +246,19 @@ impl App {
         self.show_layer_colors = !self.show_layer_colors;
     }
 
-    /// Enter imports view mode.
+    /// Toggle imports view mode.
     pub fn enter_imports_mode(&mut self) {
-        if self.mode == ViewMode::Imports {
-            self.mode = ViewMode::Normal;
-        } else {
-            self.mode = ViewMode::Imports;
-        }
+        self.toggle_mode(ViewMode::Imports);
     }
 
-    /// Enter dependents view mode.
+    /// Toggle dependents view mode.
     pub fn enter_dependents_mode(&mut self) {
-        if self.mode == ViewMode::Dependents {
-            self.mode = ViewMode::Normal;
-        } else {
-            self.mode = ViewMode::Dependents;
-        }
+        self.toggle_mode(ViewMode::Dependents);
+    }
+
+    /// Toggle a view mode (switches to Normal if already in that mode).
+    fn toggle_mode(&mut self, target: ViewMode) {
+        self.mode = if self.mode == target { ViewMode::Normal } else { target };
     }
 
     /// Enter search mode.

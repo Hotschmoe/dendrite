@@ -1,4 +1,5 @@
 use iced::{window, Element, Length, Task, Theme};
+use iced::widget::{column, container, text};
 
 mod shader;
 
@@ -10,25 +11,22 @@ pub struct App {
 }
 
 #[derive(Debug, Clone)]
-pub enum Message {
-    // Placeholder variant to avoid empty enum
-    _Placeholder,
-}
+pub enum Message {}
 
-fn init_app() -> (App, Task<Message>) {
+fn boot() -> (App, Task<Message>) {
     (App::default(), Task::none())
 }
 
-fn update_app(state: &mut App, message: Message) -> Task<Message> {
+fn update(state: &mut App, message: Message) -> Task<Message> {
     state.update(message)
 }
 
-fn view_app(state: &App) -> Element<'_, Message> {
+fn view(state: &App) -> Element<'_, Message> {
     state.view()
 }
 
-fn theme_app(state: &App) -> Theme {
-    state.theme()
+fn theme(_state: &App) -> Theme {
+    Theme::Dark
 }
 
 impl App {
@@ -37,11 +35,9 @@ impl App {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        use iced::widget::{column, container, shader, text};
-
         let title = text("Dendrite - Dependency Graph Viewer").size(20);
 
-        let graph_view = shader(&self.graph_shader)
+        let graph_view = iced::widget::shader(&self.graph_shader)
             .width(Length::Fill)
             .height(Length::Fill);
 
@@ -53,15 +49,11 @@ impl App {
             .padding(10)
             .into()
     }
-
-    fn theme(&self) -> Theme {
-        Theme::Dark
-    }
 }
 
 pub fn run() -> iced::Result {
-    iced::application(init_app, update_app, view_app)
-        .theme(theme_app)
+    iced::application(boot, update, view)
+        .theme(theme)
         .window(window::Settings {
             size: iced::Size::new(1200.0, 800.0),
             ..Default::default()

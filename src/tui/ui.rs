@@ -3,7 +3,7 @@
 //! Handles layout and drawing of the TUI interface using ratatui.
 
 use super::app::{ActivePanel, App, ViewMode};
-use super::graph_view::GraphView;
+use super::graph_view::{layer_color, GraphView};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
@@ -651,16 +651,3 @@ fn render_help_overlay(f: &mut Frame, _app: &App, area: Rect) {
     f.render_widget(paragraph, popup_area);
 }
 
-/// Get the color for a layer.
-fn layer_color(layer: crate::graph::Layer) -> Color {
-    use crate::graph::Layer;
-    match layer {
-        Layer::Entry => Color::Magenta,
-        Layer::App => Color::Cyan,
-        Layer::Core => Color::Blue,
-        Layer::Platform => Color::Green,
-        Layer::Driver => Color::Yellow,
-        Layer::Arch => Color::Red,
-        Layer::Unknown => Color::Gray,
-    }
-}

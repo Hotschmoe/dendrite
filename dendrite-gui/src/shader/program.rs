@@ -82,8 +82,8 @@ impl shader::Program<Message> for GraphShader {
         bounds: Rectangle,
         cursor: mouse::Cursor,
     ) -> Option<Action<Message>> {
-        match event {
-            Event::Mouse(mouse_event) => match mouse_event {
+        if let Event::Mouse(mouse_event) = event {
+            match mouse_event {
                 mouse::Event::ButtonPressed(mouse::Button::Left) => {
                     if let Some(position) = cursor.position_in(bounds) {
                         state.dragging = true;
@@ -122,8 +122,7 @@ impl shader::Program<Message> for GraphShader {
                     return Some(Action::request_redraw());
                 }
                 _ => {}
-            },
-            _ => {}
+            }
         }
 
         None
