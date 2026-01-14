@@ -5,15 +5,23 @@ use iced::Rectangle;
 
 use super::types::{EdgeInstance, NodeInstance};
 
-#[repr(C)]
+#[repr(C, align(16))]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct Uniforms {
-    zoom: f32,
-    pan_x: f32,
-    pan_y: f32,
-    aspect: f32,
-    time: f32,
-    _padding: [f32; 3],
+    zoom: f32,      // offset 0
+    pan_x: f32,     // offset 4
+    pan_y: f32,     // offset 8
+    aspect: f32,    // offset 12
+    time: f32,      // offset 16
+    // vec3<f32> in std140 requires 16-byte alignment and occupies 16 bytes
+    _padding1: f32, // offset 20
+    _padding2: f32, // offset 24
+    _padding3: f32, // offset 28
+    _padding4: f32, // offset 32
+    _padding5: f32, // offset 36
+    _padding6: f32, // offset 40
+    _padding7: f32, // offset 44
+    // Total: 48 bytes
 }
 
 const QUAD_VERTICES: &[[f32; 2]] = &[
@@ -351,7 +359,13 @@ impl GraphPipeline {
             pan_y: pan[1],
             aspect,
             time,
-            _padding: [0.0; 3],
+            _padding1: 0.0,
+            _padding2: 0.0,
+            _padding3: 0.0,
+            _padding4: 0.0,
+            _padding5: 0.0,
+            _padding6: 0.0,
+            _padding7: 0.0,
         };
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
