@@ -9,7 +9,7 @@ use dendrite::discovery::{discover_files, DiscoveryConfig, ParseError};
 use dendrite::graph::analysis::{analyze, AnalysisResult};
 use dendrite::graph::{FileNode, GraphBuilder, Layer};
 use dendrite::output::json::CodebaseMap;
-use dendrite::output::markdown::generate_codebase_md;
+use dendrite::output::markdown::{generate_codebase_md, generate_file_summaries, generate_metrics_json};
 use dendrite::parser::{parse_file, parse_rust_file};
 
 #[derive(Parser, Debug)]
@@ -29,9 +29,17 @@ struct Cli {
     #[arg(short, long)]
     markdown: bool,
 
+    /// Generate per-file summaries in summaries/ directory
+    #[arg(short, long)]
+    summaries: bool,
+
     /// Output directory (default: .dendrite/)
     #[arg(short, long, default_value = ".dendrite")]
     output: PathBuf,
+
+    /// Clean output directory before generating
+    #[arg(long)]
+    clean: bool,
 
     /// Suppress stdout output
     #[arg(short, long)]
@@ -260,9 +268,18 @@ fn run(cli: Cli) -> Result<()> {
     // 5. Generate outputs
     let wants_json = cli.json || cli.all;
     let wants_markdown = cli.markdown || cli.all;
-    let wants_output = wants_json || wants_markdown;
+    let wants_summaries = cli.summaries || cli.all;
+    let wants_output = wants_json || wants_markdown || wants_summaries;
 
     if wants_output {
+        // Clean output directory if requested
+        if cli.clean && cli.output.exists() {
+            if cli.verbose {
+                println!("Cleaning output directory: {}", cli.output.display());
+            }
+            fs::remove_dir_all(&cli.output)?;
+        }
+
         if !cli.output.exists() {
             if cli.verbose {
                 println!("Creating output directory: {}", cli.output.display());
@@ -271,6 +288,7 @@ fn run(cli: Cli) -> Result<()> {
         }
 
         let codemap = CodebaseMap::from_graph(&graph, &project_root.to_string_lossy());
+        let generated_at = &codemap.generated_at;
 
         if wants_json {
             let json_path = cli.output.join("graph.json");
@@ -285,6 +303,19 @@ fn run(cli: Cli) -> Result<()> {
             if !cli.quiet {
                 println!("Markdown output written to: {}", cli.output.join("CODEBASE.md").display());
             }
+        }
+
+        if wants_summaries {
+            let count = generate_file_summaries(&graph, &analysis, &cli.output, generated_at)?;
+            if !cli.quiet {
+                println!("File summaries written to: {} ({} files)", cli.output.join("summaries").display(), count);
+            }
+        }
+
+        // Always generate metrics.json with any output
+        generate_metrics_json(&graph, &analysis, &cli.output, generated_at)?;
+        if !cli.quiet && cli.verbose {
+            println!("Metrics written to: {}", cli.output.join("metrics.json").display());
         }
     }
 
