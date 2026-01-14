@@ -552,42 +552,205 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 ---
 
-## Phase 9: Stretch Goals
+## Phase 9: GPU-Accelerated GUI (Iced + wgpu)
 
-### Milestone 9.1: Iced GUI
+**Goal:** Native and WASM GUI with custom wgpu shaders for graph rendering. Single codebase targeting Vulkan (Linux), Metal (macOS), DX12 (Windows), and WebGPU (browser).
 
-| ID | Task | Status | Bead | Notes |
-|----|------|--------|------|-------|
-| 9.1.1 | Create `gui/` module with Iced | 💡 | dendrite-e50n | GPU-accelerated UI |
-| 9.1.2 | Implement graph canvas with pan/zoom | 💡 | dendrite-8xuy | Smooth navigation |
-| 9.1.3 | Implement node rendering with icons | 💡 | dendrite-i4zo | File type icons |
-| 9.1.4 | Implement edge rendering with curves | 💡 | dendrite-l8q8 | Bezier curves |
-| 9.1.5 | Implement sidebar with file details | 💡 | dendrite-fz8i | Same data as TUI |
-| 9.1.6 | Implement search with dropdown | 💡 | dendrite-vk94 | Fuzzy matching |
-| 9.1.7 | Add dark/light theme toggle | 💡 | dendrite-g12k | User preference |
-| 9.1.8 | Export graph as SVG | 💡 | dendrite-tzi1 | For documentation |
-
-### Milestone 9.2: sqlite-vec Integration
+### Milestone 9.1: Project Structure & Iced Setup
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 9.2.1 | Add sqlite and sqlite-vec dependencies | 💡 | dendrite-f47e | Vector search |
-| 9.2.2 | Create embeddings schema | 💡 | dendrite-b5di | file_id, embedding, metadata |
-| 9.2.3 | Integrate with OpenRouter API | 💡 | dendrite-167c | text-embedding-3-small |
-| 9.2.4 | Generate embeddings for file summaries | 💡 | dendrite-l9it | Async batch processing |
-| 9.2.5 | Implement semantic search query | 💡 | dendrite-fhhe | "find files about interrupts" |
-| 9.2.6 | Cache embeddings, update on change | 💡 | dendrite-7h3d | Incremental updates |
-| 9.2.7 | Add `dendrite search "query"` command | 💡 | dendrite-3611 | Natural language queries |
+| 9.1.1 | Create `dendrite-gui` crate in workspace | ⬜ | dendrite-iiit | Separate from CLI |
+| 9.1.2 | Configure Cargo.toml for cdylib + rlib | ⬜ | dendrite-wjie | Enables both native and WASM |
+| 9.1.3 | Add Iced with `wgpu` and `advanced` features | ⬜ | dendrite-hhia | Need `shader` widget |
+| 9.1.4 | Create basic Iced Application scaffold | ⬜ | dendrite-u3rc | Empty window renders |
+| 9.1.5 | Set up native entry point (main.rs) | ⬜ | dendrite-p4pz | tokio runtime |
+| 9.1.6 | Set up WASM entry point (lib.rs) | ⬜ | dendrite-0mgk | wasm-bindgen exports |
+| 9.1.7 | Configure trunk.toml for WASM builds | ⬜ | dendrite-82j9 | Asset bundling, index.html |
+| 9.1.8 | Verify builds for native and `trunk serve` | ⬜ | dendrite-cd5s | Both render empty window |
 
-### Milestone 9.3: LSP Integration
+### Milestone 9.2: wgpu Fundamentals
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 9.3.1 | Implement LSP server skeleton | 💡 | dendrite-5r2k | tower-lsp crate |
-| 9.3.2 | Provide diagnostics for cycles | 💡 | dendrite-1o4z | Inline warnings |
-| 9.3.3 | Provide code lens for import counts | 💡 | dendrite-npjp | "5 files import this" |
-| 9.3.4 | Provide hover info for imports | 💡 | dendrite-2t4f | Show target file summary |
-| 9.3.5 | Document VS Code extension | 💡 | dendrite-cte9 | User setup guide |
+| 9.2.1 | Study wgpu architecture (Device, Queue, Pipeline) | ⬜ | dendrite-gja8 | Read wgpu docs + examples |
+| 9.2.2 | Study WGSL shader syntax | ⬜ | dendrite-ks39 | Vertex, fragment stages |
+| 9.2.3 | Create minimal custom `shader::Program` in Iced | ⬜ | dendrite-cfg4 | Renders solid color quad |
+| 9.2.4 | Implement uniform buffer for viewport transform | ⬜ | dendrite-omkw | Pan, zoom, aspect ratio |
+| 9.2.5 | Pass mouse/keyboard events to shader widget | ⬜ | dendrite-8yrk | Iced Subscription |
+| 9.2.6 | Implement basic pan with mouse drag | ⬜ | dendrite-jhjx | Update uniform, re-render |
+| 9.2.7 | Implement zoom with scroll wheel | ⬜ | dendrite-vrpq | Zoom toward cursor |
+| 9.2.8 | Test on native (Vulkan/Metal) and WASM (WebGPU) | ⬜ | dendrite-5hle | Both should work identically |
+
+### Milestone 9.3: Node Rendering (Instanced Quads)
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 9.3.1 | Design node instance data structure | ⬜ | dendrite-o42x | pos, size, color, selected, depth |
+| 9.3.2 | Create vertex buffer for unit quad | ⬜ | dendrite-xnae | 4 vertices, reused for all nodes |
+| 9.3.3 | Create instance buffer for node data | ⬜ | dendrite-vlmn | One entry per node |
+| 9.3.4 | Write vertex shader with instancing | ⬜ | dendrite-v7hd | Transform quad per-instance |
+| 9.3.5 | Write fragment shader for rounded rectangles | ⬜ | dendrite-llt9 | SDF for rounded corners |
+| 9.3.6 | Add layer-based coloring | ⬜ | dendrite-2lac | Uniform color palette |
+| 9.3.7 | Add selection highlight effect | ⬜ | dendrite-5vp0 | Glow or border |
+| 9.3.8 | Add hover highlight effect | ⬜ | dendrite-p5ee | Subtle brightness change |
+| 9.3.9 | Implement cycle node pulsing animation | ⬜ | dendrite-b81r | Sin wave on time uniform |
+| 9.3.10 | Populate instance buffer from DepGraph | ⬜ | dendrite-2r9v | Layout positions -> GPU |
+| 9.3.11 | Render 100 test nodes at 60fps | ⬜ | dendrite-q3fi | Baseline performance |
+| 9.3.12 | Render 1000 test nodes at 60fps | ⬜ | dendrite-1x8m | Verify instancing scales |
+
+### Milestone 9.4: Edge Rendering
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 9.4.1 | Research edge rendering approaches | ⬜ | dendrite-jf4a | Lines vs quads vs geometry |
+| 9.4.2 | Design edge instance data structure | ⬜ | dendrite-i6eh | start, end, color, width, is_cycle |
+| 9.4.3 | Implement line rendering with quads | ⬜ | dendrite-ypej | Expand line to screen-space quad |
+| 9.4.4 | Write vertex shader for line quads | ⬜ | dendrite-brn2 | Perpendicular expansion |
+| 9.4.5 | Write fragment shader for anti-aliased lines | ⬜ | dendrite-oa22 | SDF edge smoothing |
+| 9.4.6 | Add arrow heads at target end | ⬜ | dendrite-zebi | Triangle geometry or SDF |
+| 9.4.7 | Implement curved edges (quadratic Bezier) | ⬜ | dendrite-flob | For overlapping edge clarity |
+| 9.4.8 | Tessellate Bezier to line segments | ⬜ | dendrite-bgho | Adaptive based on zoom |
+| 9.4.9 | Add cycle edge highlighting (red, animated) | ⬜ | dendrite-7pr0 | Dashed or glowing |
+| 9.4.10 | Implement edge hover detection | ⬜ | dendrite-3911 | Distance to curve on CPU |
+| 9.4.11 | Render edges behind nodes (depth/order) | ⬜ | dendrite-r6hf | Separate render pass or depth buffer |
+
+### Milestone 9.5: Text Rendering (SDF)
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 9.5.1 | Research GPU text rendering approaches | ⬜ | dendrite-yfo0 | SDF atlas vs vector vs bitmap |
+| 9.5.2 | Generate SDF font atlas (offline tool) | ⬜ | dendrite-vds2 | Use msdfgen or fontdue |
+| 9.5.3 | Load font atlas texture into wgpu | ⬜ | dendrite-6nys | Texture + sampler |
+| 9.5.4 | Implement text vertex buffer generation | ⬜ | dendrite-4ix2 | Quad per character |
+| 9.5.5 | Write vertex shader for text quads | ⬜ | dendrite-xniy | Position + UV |
+| 9.5.6 | Write fragment shader for SDF sampling | ⬜ | dendrite-kcek | Smooth alpha threshold |
+| 9.5.7 | Implement text centering in nodes | ⬜ | dendrite-qszj | Measure string width |
+| 9.5.8 | Implement text truncation with ellipsis | ⬜ | dendrite-popo | "scheduler.zi..." |
+| 9.5.9 | Implement zoom-dependent text visibility | ⬜ | dendrite-ndy5 | Hide labels when zoomed out |
+| 9.5.10 | Test text clarity at various zoom levels | ⬜ | dendrite-80zw | SDF should stay crisp |
+
+### Milestone 9.6: Graph Layout Engine
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 9.6.1 | Research hierarchical layout algorithms | ⬜ | dendrite-qi9g | Sugiyama, ELK approach |
+| 9.6.2 | Implement layer assignment (longest path) | ⬜ | dendrite-qq2i | Entry=0, leaves=max |
+| 9.6.3 | Implement node ordering within layers | ⬜ | dendrite-7giu | Minimize edge crossings |
+| 9.6.4 | Implement coordinate assignment | ⬜ | dendrite-49ki | X from layer, Y from order |
+| 9.6.5 | Add spacing configuration | ⬜ | dendrite-yp88 | layer_gap, node_gap |
+| 9.6.6 | Handle disconnected components | ⬜ | dendrite-yzox | Stack vertically |
+| 9.6.7 | Implement layout caching | ⬜ | dendrite-myoe | Recompute only on graph change |
+| 9.6.8 | Add smooth animation on layout change | ⬜ | dendrite-4cf6 | Lerp positions over frames |
+
+### Milestone 9.7: Interaction & Picking
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 9.7.1 | Implement screen-to-world coordinate transform | ⬜ | dendrite-3ysj | Inverse of view matrix |
+| 9.7.2 | Implement node hit testing | ⬜ | dendrite-aqs8 | Point-in-rect on CPU |
+| 9.7.3 | Implement node selection on click | ⬜ | dendrite-mppj | Update uniform, notify app |
+| 9.7.4 | Implement edge hit testing | ⬜ | dendrite-p9ym | Distance to line/curve |
+| 9.7.5 | Implement hover state tracking | ⬜ | dendrite-ub0t | Cursor position subscription |
+| 9.7.6 | Implement double-click to focus node | ⬜ | dendrite-1dz1 | Animate pan/zoom to center |
+| 9.7.7 | Implement keyboard navigation | ⬜ | dendrite-mjb0 | Arrow keys move selection |
+| 9.7.8 | Implement "fit graph to view" command | ⬜ | dendrite-rs9b | Calculate bounding box |
+| 9.7.9 | Implement path highlighting mode | ⬜ | dendrite-mdh8 | Dim unrelated nodes/edges |
+
+### Milestone 9.8: Iced UI Shell
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 9.8.1 | Design overall layout (graph + sidebar + status) | ⬜ | dendrite-atb2 | Flexbox-style in Iced |
+| 9.8.2 | Implement resizable sidebar | ⬜ | dendrite-9hyt | Drag handle |
+| 9.8.3 | Implement file details panel | ⬜ | dendrite-9xte | Same data as TUI |
+| 9.8.4 | Implement imports/dependents lists | ⬜ | dendrite-0aj4 | Clickable to select node |
+| 9.8.5 | Implement alerts panel | ⬜ | dendrite-1d72 | Cycles, violations |
+| 9.8.6 | Implement search overlay | ⬜ | dendrite-aibr | Fuzzy filter files |
+| 9.8.7 | Implement status bar | ⬜ | dendrite-ne0k | File count, depth, alerts |
+| 9.8.8 | Implement keyboard shortcuts overlay (?) | ⬜ | dendrite-4moz | Help modal |
+| 9.8.9 | Implement dark/light theme toggle | ⬜ | dendrite-7cnq | Uniform color update |
+| 9.8.10 | Style with custom Iced theme | ⬜ | dendrite-38n9 | Consistent look |
+
+### Milestone 9.9: Platform Abstraction
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 9.9.1 | Create `platform` module for native/web differences | ⬜ | dendrite-gh8u | Trait-based abstraction |
+| 9.9.2 | Implement native file dialog (rfd) | ⬜ | dendrite-mjvk | Open directory picker |
+| 9.9.3 | Implement web file input (drag-drop, upload) | ⬜ | dendrite-egd3 | web-sys File API |
+| 9.9.4 | Implement GitHub URL input (both platforms) | ⬜ | dendrite-muuy | Text field + fetch |
+| 9.9.5 | Implement zip download for GitHub repos | ⬜ | dendrite-uetj | reqwest (native), fetch (web) |
+| 9.9.6 | Implement zip extraction (both platforms) | ⬜ | dendrite-f83k | zip crate (native), fflate (web) |
+| 9.9.7 | Implement progress reporting during load | ⬜ | dendrite-4ff3 | Iced Command + Subscription |
+| 9.9.8 | Handle CORS for GitHub API on web | ⬜ | dendrite-3k0j | Archive endpoint should work |
+
+### Milestone 9.10: WASM Optimization
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 9.10.1 | Profile WASM bundle size | ⬜ | dendrite-i5hc | Identify large contributors |
+| 9.10.2 | Enable wasm-opt in release build | ⬜ | dendrite-ie4u | -Os or -Oz flag |
+| 9.10.3 | Configure LTO for smaller binary | ⬜ | dendrite-daff | Cargo profile setting |
+| 9.10.4 | Lazy-load shader compilation | ⬜ | dendrite-wm5m | Don't block initial render |
+| 9.10.5 | Test on Chrome, Firefox, Safari | ⬜ | dendrite-5xib | WebGPU / WebGL2 fallback |
+| 9.10.6 | Add WebGPU capability detection | ⬜ | dendrite-mgry | Warn if falling back |
+| 9.10.7 | Measure and optimize first paint time | ⬜ | dendrite-n1uf | Target < 2 seconds |
+| 9.10.8 | Set up GitHub Pages deployment | ⬜ | dendrite-bej2 | trunk build + gh-pages |
+
+### Milestone 9.11: Export & Integration
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 9.11.1 | Implement "Download JSON" button | ⬜ | dendrite-htlm | Blob download on web |
+| 9.11.2 | Implement "Download Markdown" button | ⬜ | dendrite-g7tv | Generate CODEBASE.md |
+| 9.11.3 | Implement "Copy Mermaid" button | ⬜ | dendrite-kj78 | Clipboard API |
+| 9.11.4 | Implement screenshot/export to PNG | ⬜ | dendrite-ke3b | Read back framebuffer |
+| 9.11.5 | Implement SVG export (vector) | ⬜ | dendrite-jbfy | Generate from layout data |
+| 9.11.6 | Add shareable URL with repo encoded | ⬜ | dendrite-kqmn | ?repo=owner/name |
+
+**Phase 9 Exit Criteria:**
+- `dendrite-gui` runs natively on Windows, macOS, Linux
+- WASM build works in modern browsers with WebGPU
+- Smooth 60fps graph rendering with 1000+ nodes
+- Full feature parity with TUI (navigation, search, alerts)
+
+---
+
+## Phase 10: Stretch Goals
+
+### Milestone 10.1: sqlite-vec Integration
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 10.1.1 | Add sqlite and sqlite-vec dependencies | 💡 | dendrite-f47e | Vector search |
+| 10.1.2 | Create embeddings schema | 💡 | dendrite-b5di | file_id, embedding, metadata |
+| 10.1.3 | Integrate with OpenRouter API | 💡 | dendrite-167c | text-embedding-3-small |
+| 10.1.4 | Generate embeddings for file summaries | 💡 | dendrite-l9it | Async batch processing |
+| 10.1.5 | Implement semantic search query | 💡 | dendrite-fhhe | "find files about interrupts" |
+| 10.1.6 | Cache embeddings, update on change | 💡 | dendrite-7h3d | Incremental updates |
+| 10.1.7 | Add `dendrite search "query"` command | 💡 | dendrite-3611 | Natural language queries |
+| 10.1.8 | Add semantic search to GUI | 💡 | dendrite-erip | Results highlight in graph |
+
+### Milestone 10.2: LSP Integration
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 10.2.1 | Implement LSP server skeleton | 💡 | dendrite-5r2k | tower-lsp crate |
+| 10.2.2 | Provide diagnostics for cycles | 💡 | dendrite-1o4z | Inline warnings |
+| 10.2.3 | Provide code lens for import counts | 💡 | dendrite-npjp | "5 files import this" |
+| 10.2.4 | Provide hover info for imports | 💡 | dendrite-2t4f | Show target file summary |
+| 10.2.5 | Document VS Code extension | 💡 | dendrite-cte9 | User setup guide |
+
+### Milestone 10.3: Advanced Shader Effects
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 10.3.1 | Implement force-directed layout (GPU compute) | 💡 | dendrite-63p0 | Compute shader simulation |
+| 10.3.2 | Implement animated edge particles | 💡 | dendrite-qqjh | Data flow visualization |
+| 10.3.3 | Implement depth-of-field blur | 💡 | dendrite-itob | Focus on selected region |
+| 10.3.4 | Implement minimap overlay | 💡 | dendrite-er0t | Render full graph small |
+| 10.3.5 | Implement graph diffing visualization | 💡 | dendrite-pw7n | Show changes between commits |
 
 ---
 
@@ -603,8 +766,9 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 | 6. Parsers | 15 | 5 |
 | 7. Advanced | 17 | 3 |
 | 8. Distribution | 16 | 5 |
-| 9. Stretch | 0 | 22 |
-| **Total** | **220** | **35** |
+| 9. GPU GUI | 89 | 0 |
+| 10. Stretch | 0 | 21 |
+| **Total** | **309** | **34** |
 
 ---
 
@@ -612,15 +776,44 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | Version | Phases | Features |
 |---------|--------|----------|
-| 0.1.0 | 1 | Basic parsing and JSON output |  |
-| 0.2.0 | 1-2 | Analysis engine, CI mode |  |
-| 0.3.0 | 1-3 | Markdown generation |  |
-| 0.4.0 | 1-4 | Configuration system |  |
-| 0.5.0 | 1-5 | Full TUI |  |
-| 0.6.0 | 1-6 | Assembly support |  |
-| 0.7.0 | 1-7 | Watch mode, queries |  |
-| 1.0.0 | 1-8 | Full release, all platforms |  |
-| 1.x | 9 | GUI, semantic search, LSP |
+| 0.1.0 | 1 | Basic parsing and JSON output |
+| 0.2.0 | 1-2 | Analysis engine, CI mode |
+| 0.3.0 | 1-3 | Markdown generation |
+| 0.4.0 | 1-4 | Configuration system |
+| 0.5.0 | 1-5 | Full TUI |
+| 0.6.0 | 1-6 | Assembly support |
+| 0.7.0 | 1-7 | Watch mode, queries |
+| 1.0.0 | 1-8 | Full CLI release, all platforms |
+| 2.0.0 | 1-9 | GPU GUI (native + WASM) |
+| 2.x | 10 | Semantic search, LSP, advanced effects |
+
+---
+
+## Shader Learning Path
+
+Phase 9 is designed as a learning journey through GPU graphics programming. Recommended study order:
+
+### Fundamentals (before starting 9.2)
+1. **wgpu basics**: [Learn Wgpu](https://sotrh.github.io/learn-wgpu/) tutorial
+2. **WGSL syntax**: [WGSL spec](https://www.w3.org/TR/WGSL/) (skim), [Tour of WGSL](https://google.github.io/tour-of-wgsl/)
+3. **GPU architecture**: Understand vertex -> rasterization -> fragment pipeline
+
+### Techniques you'll implement
+| Technique | Used For | Milestone |
+|-----------|----------|-----------|
+| Instanced rendering | Drawing many nodes efficiently | 9.3 |
+| Signed Distance Fields (2D) | Rounded rectangles, smooth edges | 9.3, 9.4 |
+| Screen-space expansion | Line -> quad conversion | 9.4 |
+| Bezier tessellation | Curved edges | 9.4 |
+| SDF font rendering | Crisp text at any zoom | 9.5 |
+| Uniform buffers | Camera transform, colors | 9.2+ |
+| Texture sampling | Font atlas | 9.5 |
+
+### Resources
+- [The Book of Shaders](https://thebookofshaders.com/) - SDF and 2D techniques
+- [Inigo Quilez's articles](https://iquilezles.org/articles/) - SDF primitives and operations
+- [wgpu examples](https://github.com/gfx-rs/wgpu/tree/trunk/examples) - Reference implementations
+- [Iced shader example](https://github.com/iced-rs/iced/tree/master/examples/shader) - Integration pattern
 
 ---
 
