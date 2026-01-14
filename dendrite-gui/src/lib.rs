@@ -1,8 +1,12 @@
-use iced::{window, Element, Task, Theme};
+use iced::{window, Element, Length, Task, Theme};
+
+mod shader;
+
+use shader::GraphShader;
 
 #[derive(Default)]
 pub struct App {
-    // Will hold graph, analysis, UI state
+    graph_shader: GraphShader,
 }
 
 #[derive(Debug, Clone)]
@@ -33,7 +37,21 @@ impl App {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        iced::widget::text("Dendrite - Dependency Graph Viewer").into()
+        use iced::widget::{column, container, shader, text};
+
+        let title = text("Dendrite - Dependency Graph Viewer").size(20);
+
+        let graph_view = shader(&self.graph_shader)
+            .width(Length::Fill)
+            .height(Length::Fill);
+
+        let content = column![title, graph_view].spacing(10);
+
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .padding(10)
+            .into()
     }
 
     fn theme(&self) -> Theme {

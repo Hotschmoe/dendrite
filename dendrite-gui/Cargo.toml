@@ -12,7 +12,8 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 dendrite = { path = ".." }
-iced = { version = "0.14", features = ["wgpu", "tokio", "canvas"] }
+iced = { version = "0.14", features = ["wgpu", "tokio", "canvas", "advanced"] }
+bytemuck = { version = "1.14", features = ["derive"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 iced = { version = "0.14", default-features = false, features = ["wgpu", "canvas", "web-colors"] }

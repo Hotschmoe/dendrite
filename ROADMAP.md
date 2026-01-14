@@ -639,14 +639,14 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 9.2.1 | Study wgpu architecture (Device, Queue, Pipeline) | ⬜ | dendrite-gja8 | Read wgpu docs + examples |
-| 9.2.2 | Study WGSL shader syntax | ⬜ | dendrite-ks39 | Vertex, fragment stages |
-| 9.2.3 | Create minimal custom `shader::Program` in Iced | ⬜ | dendrite-cfg4 | Renders solid color quad |
-| 9.2.4 | Implement uniform buffer for viewport transform | ⬜ | dendrite-omkw | Pan, zoom, aspect ratio |
-| 9.2.5 | Pass mouse/keyboard events to shader widget | ⬜ | dendrite-8yrk | Iced Subscription |
-| 9.2.6 | Implement basic pan with mouse drag | ⬜ | dendrite-jhjx | Update uniform, re-render |
-| 9.2.7 | Implement zoom with scroll wheel | ⬜ | dendrite-vrpq | Zoom toward cursor |
-| 9.2.8 | Test on native (Vulkan/Metal) and WASM (WebGPU) | ⬜ | dendrite-5hle | Both should work identically |
+| 9.2.1 | Study wgpu architecture (Device, Queue, Pipeline) | ✅ | dendrite-gja8 | Pipeline, Buffer, BindGroup |
+| 9.2.2 | Study WGSL shader syntax | ✅ | dendrite-ks39 | Vertex, fragment stages |
+| 9.2.3 | Create minimal custom `shader::Program` in Iced | ✅ | dendrite-cfg4 | Renders grid pattern |
+| 9.2.4 | Implement uniform buffer for viewport transform | ✅ | dendrite-omkw | Pan, zoom, aspect ratio |
+| 9.2.5 | Pass mouse/keyboard events to shader widget | ✅ | dendrite-8yrk | shader::Event handling |
+| 9.2.6 | Implement basic pan with mouse drag | ✅ | dendrite-jhjx | Update uniform, re-render |
+| 9.2.7 | Implement zoom with scroll wheel | ✅ | dendrite-vrpq | Zoom clamped 0.1-10x |
+| 9.2.8 | Test on native (Vulkan/Metal) and WASM (WebGPU) | ✅ | dendrite-5hle | Native verified, WASM ready |
 
 ### Milestone 9.3: Node Rendering (Instanced Quads)
 
