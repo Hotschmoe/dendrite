@@ -1,11 +1,13 @@
 // Dendrite Graph Shader
-// Simple grid renderer to verify pan/zoom functionality
+// Grid background and instanced node rendering
 
 struct Uniforms {
     zoom: f32,
     pan_x: f32,
     pan_y: f32,
     aspect: f32,
+    time: f32,
+    _padding: vec3<f32>,
 }
 
 @group(0) @binding(0)
@@ -16,7 +18,15 @@ struct VertexOutput {
     @location(0) uv: vec2<f32>,
 }
 
-// Full-screen triangle (no vertex buffer needed)
+struct NodeVertexOutput {
+    @builtin(position) position: vec4<f32>,
+    @location(0) local_pos: vec2<f32>,
+    @location(1) size: vec2<f32>,
+    @location(2) color: vec4<f32>,
+    @location(3) flags: u32,
+}
+
+// Full-screen triangle for background grid
 @vertex
 fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     var out: VertexOutput;
@@ -27,14 +37,12 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     return out;
 }
 
-// Simple grid pattern to verify shader works
+// Background grid pattern
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    // Apply pan and zoom to UV coordinates
     let pan = vec2<f32>(uniforms.pan_x, uniforms.pan_y);
     let uv = (in.uv * vec2<f32>(uniforms.aspect, 1.0) - pan) / uniforms.zoom;
 
-    // Grid pattern to show pan/zoom working
     let grid_scale = 10.0;
     let grid_uv = fract(uv * grid_scale);
     let grid_width = 0.02;
@@ -42,10 +50,95 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let grid_y = step(grid_width, grid_uv.y);
     let grid = grid_x * grid_y;
 
-    // Base color with grid overlay
     let base_color = vec3<f32>(0.1, 0.1, 0.15);
     let grid_color = vec3<f32>(0.2, 0.2, 0.25);
     let color = mix(grid_color, base_color, grid);
 
     return vec4<f32>(color, 1.0);
+}
+
+// Node rendering with instancing
+@vertex
+fn vs_node(
+    @location(0) vertex_pos: vec2<f32>,
+    @location(1) instance_position: vec2<f32>,
+    @location(2) instance_size: vec2<f32>,
+    @location(3) instance_color: vec4<f32>,
+    @location(4) instance_flags: u32,
+) -> NodeVertexOutput {
+    var out: NodeVertexOutput;
+
+    // Transform vertex by instance size and position (world space)
+    let world_pos = vertex_pos * instance_size + instance_position;
+
+    // Apply pan and zoom
+    let pan = vec2<f32>(uniforms.pan_x, uniforms.pan_y);
+    let view_pos = (world_pos - pan) * uniforms.zoom;
+
+    // Convert to NDC (normalized device coordinates)
+    let ndc_x = view_pos.x / uniforms.aspect;
+    let ndc_y = view_pos.y;
+
+    out.position = vec4<f32>(ndc_x, ndc_y, 0.0, 1.0);
+    out.local_pos = vertex_pos;
+    out.size = instance_size;
+    out.color = instance_color;
+    out.flags = instance_flags;
+
+    return out;
+}
+
+// SDF for rounded rectangle
+fn sdf_rounded_rect(p: vec2<f32>, size: vec2<f32>, radius: f32) -> f32 {
+    let q = abs(p) - size + vec2<f32>(radius);
+    return min(max(q.x, q.y), 0.0) + length(max(q, vec2<f32>(0.0))) - radius;
+}
+
+// Node fragment shader with effects
+@fragment
+fn fs_node(in: NodeVertexOutput) -> @location(0) vec4<f32> {
+    let selected = (in.flags & 0x1u) != 0u;
+    let hovered = (in.flags & 0x2u) != 0u;
+    let in_cycle = (in.flags & 0x4u) != 0u;
+
+    // SDF rounded rectangle
+    let corner_radius = 4.0;
+    let d = sdf_rounded_rect(in.local_pos * in.size, in.size * 0.5, corner_radius);
+
+    // Anti-aliased edge
+    let edge_smoothness = 1.0;
+    let alpha = 1.0 - smoothstep(-edge_smoothness, edge_smoothness, d);
+
+    var color = in.color;
+
+    // Apply selection effect (brighter)
+    if (selected) {
+        color = vec4<f32>(color.rgb * 1.3, color.a);
+    }
+
+    // Apply hover effect (slight brightness boost)
+    if (hovered) {
+        color = vec4<f32>(color.rgb * 1.15, color.a);
+    }
+
+    // Apply cycle pulsing effect
+    if (in_cycle) {
+        let pulse = (sin(uniforms.time * 3.0) * 0.5 + 0.5) * 0.3;
+        color = vec4<f32>(color.rgb * (1.0 + pulse), color.a);
+    }
+
+    // Border for selected nodes
+    if (selected) {
+        let border_width = 2.0;
+        let border_d = abs(d) - border_width;
+        let border_alpha = 1.0 - smoothstep(-edge_smoothness, edge_smoothness, border_d);
+        let border_color = vec4<f32>(1.0, 1.0, 1.0, border_alpha);
+
+        // Mix border with fill
+        if (d > -border_width) {
+            color = mix(color, border_color, border_alpha);
+        }
+    }
+
+    return vec4<f32>(color.rgb, color.a * alpha);
 }

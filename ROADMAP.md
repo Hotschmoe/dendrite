@@ -652,16 +652,16 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 9.3.1 | Design node instance data structure | ⬜ | dendrite-o42x | pos, size, color, selected, depth |
-| 9.3.2 | Create vertex buffer for unit quad | ⬜ | dendrite-xnae | 4 vertices, reused for all nodes |
-| 9.3.3 | Create instance buffer for node data | ⬜ | dendrite-vlmn | One entry per node |
-| 9.3.4 | Write vertex shader with instancing | ⬜ | dendrite-v7hd | Transform quad per-instance |
-| 9.3.5 | Write fragment shader for rounded rectangles | ⬜ | dendrite-llt9 | SDF for rounded corners |
-| 9.3.6 | Add layer-based coloring | ⬜ | dendrite-2lac | Uniform color palette |
-| 9.3.7 | Add selection highlight effect | ⬜ | dendrite-5vp0 | Glow or border |
-| 9.3.8 | Add hover highlight effect | ⬜ | dendrite-p5ee | Subtle brightness change |
-| 9.3.9 | Implement cycle node pulsing animation | ⬜ | dendrite-b81r | Sin wave on time uniform |
-| 9.3.10 | Populate instance buffer from DepGraph | ⬜ | dendrite-2r9v | Layout positions -> GPU |
+| 9.3.1 | Design node instance data structure | ✅ | dendrite-o42x | NodeInstance with pos, size, color, flags |
+| 9.3.2 | Create vertex buffer for unit quad | ✅ | dendrite-xnae | QUAD_VERTICES, 4 corners |
+| 9.3.3 | Create instance buffer for node data | ✅ | dendrite-vlmn | Dynamic resizing, 1024 initial capacity |
+| 9.3.4 | Write vertex shader with instancing | ✅ | dendrite-v7hd | vs_node with per-instance transform |
+| 9.3.5 | Write fragment shader for rounded rectangles | ✅ | dendrite-llt9 | SDF with anti-aliased edges |
+| 9.3.6 | Add layer-based coloring | ✅ | dendrite-2lac | layer_color() maps Layer to RGBA |
+| 9.3.7 | Add selection highlight effect | ✅ | dendrite-5vp0 | White border + brighter color |
+| 9.3.8 | Add hover highlight effect | ✅ | dendrite-p5ee | 1.15x brightness boost |
+| 9.3.9 | Implement cycle node pulsing animation | ✅ | dendrite-b81r | Sin wave on time uniform |
+| 9.3.10 | Populate instance buffer from DepGraph | ✅ | dendrite-2r9v | Test nodes rendering |
 | 9.3.11 | Render 100 test nodes at 60fps | ⬜ | dendrite-q3fi | Baseline performance |
 | 9.3.12 | Render 1000 test nodes at 60fps | ⬜ | dendrite-1x8m | Verify instancing scales |
 

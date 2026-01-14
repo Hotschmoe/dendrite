@@ -946,7 +946,7 @@ dependencies = [
 
 [[package]]
 name = "dendrite"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -968,7 +968,7 @@ dependencies = [
 
 [[package]]
 name = "dendrite-gui"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "bytemuck",
  "console_error_panic_hook",

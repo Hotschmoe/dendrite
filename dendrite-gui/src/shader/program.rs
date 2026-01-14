@@ -4,9 +4,29 @@ use iced::widget::shader::{self, Action, Primitive};
 use iced::{wgpu, Event, Point, Rectangle};
 
 use super::pipeline::GraphPipeline;
+use super::types::NodeInstance;
 
-#[derive(Default)]
-pub struct GraphShader;
+pub struct GraphShader {
+    pub instances: Vec<NodeInstance>,
+}
+
+impl Default for GraphShader {
+    fn default() -> Self {
+        use super::types::layer_color;
+        use dendrite::graph::Layer;
+
+        let instances = vec![
+            NodeInstance::new([0.0, 0.0], [0.2, 0.08], layer_color(Layer::Entry)),
+            NodeInstance::new([-0.3, 0.3], [0.2, 0.08], layer_color(Layer::App)),
+            NodeInstance::new([0.3, 0.3], [0.2, 0.08], layer_color(Layer::Core)),
+            NodeInstance::new([-0.3, -0.3], [0.2, 0.08], layer_color(Layer::Platform)),
+            NodeInstance::new([0.3, -0.3], [0.2, 0.08], layer_color(Layer::Driver)),
+            NodeInstance::new([0.0, -0.5], [0.2, 0.08], layer_color(Layer::Arch)),
+        ];
+
+        Self { instances }
+    }
+}
 
 #[derive(Debug)]
 pub struct ShaderState {
@@ -14,6 +34,7 @@ pub struct ShaderState {
     pub pan: [f32; 2],
     pub dragging: bool,
     pub last_cursor: Option<Point>,
+    pub time: f32,
 }
 
 impl Default for ShaderState {
@@ -23,6 +44,7 @@ impl Default for ShaderState {
             pan: [0.0, 0.0],
             dragging: false,
             last_cursor: None,
+            time: 0.0,
         }
     }
 }
@@ -31,7 +53,9 @@ impl Default for ShaderState {
 pub struct GraphPrimitive {
     pub zoom: f32,
     pub pan: [f32; 2],
+    pub time: f32,
     pub bounds: Rectangle,
+    pub instances: Vec<NodeInstance>,
 }
 
 impl Primitive for GraphPrimitive {
@@ -40,12 +64,13 @@ impl Primitive for GraphPrimitive {
     fn prepare(
         &self,
         pipeline: &mut Self::Pipeline,
-        _device: &wgpu::Device,
+        device: &wgpu::Device,
         queue: &wgpu::Queue,
         _bounds: &Rectangle,
         _viewport: &shader::Viewport,
     ) {
-        pipeline.update_uniforms(queue, self.zoom, self.pan, &self.bounds);
+        pipeline.update_uniforms(queue, self.zoom, self.pan, self.time, &self.bounds);
+        pipeline.update_instances(device, queue, &self.instances);
     }
 
     fn draw(
@@ -53,7 +78,7 @@ impl Primitive for GraphPrimitive {
         pipeline: &Self::Pipeline,
         render_pass: &mut wgpu::RenderPass<'_>,
     ) -> bool {
-        pipeline.draw(render_pass);
+        pipeline.draw(render_pass, self.instances.len() as u32);
         true
     }
 }
@@ -71,7 +96,9 @@ impl shader::Program<Message> for GraphShader {
         GraphPrimitive {
             zoom: state.zoom,
             pan: state.pan,
+            time: state.time,
             bounds,
+            instances: self.instances.clone(),
         }
     }
 
@@ -82,6 +109,8 @@ impl shader::Program<Message> for GraphShader {
         bounds: Rectangle,
         cursor: mouse::Cursor,
     ) -> Option<Action<Message>> {
+        use std::time::SystemTime;
+
         if let Event::Mouse(mouse_event) = event {
             match mouse_event {
                 mouse::Event::ButtonPressed(mouse::Button::Left) => {
@@ -125,7 +154,12 @@ impl shader::Program<Message> for GraphShader {
             }
         }
 
-        None
+        state.time = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs_f32();
+
+        Some(Action::request_redraw())
     }
 
     fn mouse_interaction(
