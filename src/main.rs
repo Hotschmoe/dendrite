@@ -245,7 +245,7 @@ fn run(cli: Cli) -> Result<()> {
     // Add edges
     builder.add_edges(&import_map);
 
-    let graph = builder.build();
+    let mut graph = builder.build();
 
     if cli.verbose {
         println!(
@@ -256,7 +256,15 @@ fn run(cli: Cli) -> Result<()> {
         println!();
     }
 
-    // 4. Run analysis (needed for markdown and CI mode)
+    // 4. Calculate and apply depths to nodes
+    let depths = dendrite::graph::analysis::calculate_depths(&graph);
+    for node_idx in graph.node_indices() {
+        if let Some(&depth) = depths.get(&node_idx) {
+            graph[node_idx].depth = depth;
+        }
+    }
+
+    // 5. Run analysis (needed for markdown and CI mode)
     let analysis = analyze(&graph, 5); // threshold for high fan-in/out
 
     // If TUI mode, launch interactive interface

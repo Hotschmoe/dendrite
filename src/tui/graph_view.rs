@@ -264,6 +264,27 @@ impl<'a> GraphView<'a> {
             self.layout.get_node_right(from_idx),
             self.layout.get_node_left(to_idx),
         ) {
+            // Apply viewport offset
+            let x1 = x1 as i16 + self.app.viewport_offset.0;
+            let y1 = y1 as i16 + self.app.viewport_offset.1;
+            let x2 = x2 as i16 + self.app.viewport_offset.0;
+            let y2 = y2 as i16 + self.app.viewport_offset.1;
+
+            // Skip if both endpoints are off-screen
+            if x1 < 0 && x2 < 0 {
+                return;
+            }
+            if y1 < 0 && y2 < 0 {
+                return;
+            }
+            if x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0 {
+                return;
+            }
+
+            let x1 = x1 as u16;
+            let y1 = y1 as u16;
+            let x2 = x2 as u16;
+            let y2 = y2 as u16;
             // Simple L-shaped edge: horizontal then vertical
             let horizontal = '\u{2500}'; // ─
             let vertical = '\u{2502}'; // │
@@ -333,8 +354,21 @@ impl<'a> Widget for GraphView<'a> {
         // Second pass: draw all nodes
         for node_idx in self.app.graph.node_indices() {
             if let Some((x, y)) = self.layout.get_position(node_idx) {
-                // Apply viewport offset here when implemented
-                self.draw_node(buffer, node_idx, x, y, area, &cycle_nodes);
+                // Apply viewport offset
+                let offset_x = x as i16 + self.app.viewport_offset.0;
+                let offset_y = y as i16 + self.app.viewport_offset.1;
+
+                // Only draw if within viewport bounds
+                if offset_x >= 0 && offset_y >= 0 {
+                    self.draw_node(
+                        buffer,
+                        node_idx,
+                        offset_x as u16,
+                        offset_y as u16,
+                        area,
+                        &cycle_nodes,
+                    );
+                }
             }
         }
     }

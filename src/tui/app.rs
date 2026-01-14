@@ -125,6 +125,7 @@ impl App {
             if let Some(pos) = same_depth_nodes.iter().position(|&idx| idx == current_idx) {
                 let next_pos = (pos + 1) % same_depth_nodes.len();
                 self.selected_node = Some(same_depth_nodes[next_pos]);
+                self.ensure_selected_visible();
             }
         }
     }
@@ -153,6 +154,7 @@ impl App {
                     pos - 1
                 };
                 self.selected_node = Some(same_depth_nodes[prev_pos]);
+                self.ensure_selected_visible();
             }
         }
     }
@@ -169,6 +171,7 @@ impl App {
                 .find(|&idx| self.graph[idx].depth == current_depth + 1)
             {
                 self.selected_node = Some(next_node);
+                self.ensure_selected_visible();
             }
         }
     }
@@ -186,6 +189,7 @@ impl App {
                     .find(|&idx| self.graph[idx].depth == current_depth - 1)
                 {
                     self.selected_node = Some(prev_node);
+                    self.ensure_selected_visible();
                 }
             }
         }
@@ -240,6 +244,7 @@ impl App {
                     .find(|&idx| &self.graph[idx].relative_path == first_file) {
                     self.selected_node = Some(idx);
                     self.panel = ActivePanel::Graph;
+                    self.ensure_selected_visible();
                 }
             }
         } else {
@@ -251,6 +256,7 @@ impl App {
                     .find(|&idx| self.graph[idx].relative_path == violation.file) {
                     self.selected_node = Some(idx);
                     self.panel = ActivePanel::Graph;
+                    self.ensure_selected_visible();
                 }
             }
         }
@@ -332,6 +338,7 @@ impl App {
         // Select first search result if available
         if !self.search_results.is_empty() {
             self.selected_node = Some(self.search_results[0]);
+            self.ensure_selected_visible();
         }
     }
 
@@ -372,6 +379,7 @@ impl App {
             .find(|&idx| &self.graph[idx].relative_path == target_file) {
             self.selected_node = Some(idx);
             self.panel = ActivePanel::Graph;
+            self.ensure_selected_visible();
         }
     }
 
@@ -484,5 +492,46 @@ impl App {
     pub fn exit_path_trace(&mut self) {
         self.traced_path.clear();
         self.mode = ViewMode::Normal;
+    }
+
+    /// Ensure the selected node is visible in the viewport.
+    ///
+    /// Adjusts viewport_offset to keep the selected node within view.
+    pub fn ensure_selected_visible(&mut self) {
+        if let Some(selected_idx) = self.selected_node {
+            if let Some((x, y)) = self.layout.get_position(selected_idx) {
+                // Viewport size is assumed to be the terminal size (we don't have it here)
+                // For now, just ensure the node is not too far off-screen
+                // A proper implementation would need viewport dimensions passed in
+
+                // Simple centering: adjust viewport to show the selected node
+                // viewport_offset is (x, y) offset for scrolling
+                // Positive offset moves content left/up (shows content to the right/down)
+                // Negative offset moves content right/down (shows content to the left/up)
+
+                // For now, keep it simple - don't adjust if already visible
+                // This is a basic implementation that prevents extreme off-screen positions
+                let max_offset = 200;
+                let min_offset = -200;
+
+                // Adjust horizontal scroll if node is too far right or left
+                if x as i16 > max_offset {
+                    self.viewport_offset.0 = -(x as i16 - 50);
+                } else if (x as i16) < -min_offset {
+                    self.viewport_offset.0 = -(x as i16);
+                }
+
+                // Adjust vertical scroll if node is too far down or up
+                if y as i16 > max_offset {
+                    self.viewport_offset.1 = -(y as i16 - 20);
+                } else if (y as i16) < -min_offset {
+                    self.viewport_offset.1 = -(y as i16);
+                }
+
+                // Clamp to reasonable bounds
+                self.viewport_offset.0 = self.viewport_offset.0.clamp(-500, 500);
+                self.viewport_offset.1 = self.viewport_offset.1.clamp(-500, 500);
+            }
+        }
     }
 }
