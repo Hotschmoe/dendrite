@@ -117,76 +117,151 @@ fn render_details_panel(f: &mut Frame, app: &App, area: Rect) {
     let text = if let Some(selected_idx) = app.selected_node {
         let node = &app.graph[selected_idx];
 
-        let mut lines = vec![
-            Line::from(vec![
-                Span::styled("File: ", Style::default().bold()),
-                Span::raw(&node.relative_path),
-            ]),
-            Line::from(""),
-            Line::from(vec![
-                Span::styled("Layer: ", Style::default().bold()),
-                Span::styled(
-                    node.layer.to_string(),
-                    Style::default().fg(layer_color(node.layer)),
-                ),
-            ]),
-            Line::from(vec![
-                Span::styled("LOC: ", Style::default().bold()),
-                Span::raw(node.loc.to_string()),
-            ]),
-            Line::from(vec![
-                Span::styled("Depth: ", Style::default().bold()),
-                Span::raw(node.depth.to_string()),
-            ]),
-            Line::from(""),
-        ];
+        let mut lines = vec![];
 
-        // Add imports count
-        let imports_count = app
-            .graph
-            .neighbors_directed(selected_idx, petgraph::Direction::Outgoing)
-            .count();
-        lines.push(Line::from(vec![
-            Span::styled("Imports: ", Style::default().bold()),
-            Span::raw(imports_count.to_string()),
-        ]));
+        // Check if this file is in a cycle
+        let in_cycle = app.analysis.cycles.iter().any(|cycle| {
+            cycle.nodes.contains(&node.relative_path)
+        });
 
-        // Add dependents count
-        let dependents_count = app
-            .graph
-            .neighbors_directed(selected_idx, petgraph::Direction::Incoming)
-            .count();
-        lines.push(Line::from(vec![
-            Span::styled("Dependents: ", Style::default().bold()),
-            Span::raw(dependents_count.to_string()),
-        ]));
-
-        // Add exports if any
-        if !node.exports.is_empty() {
+        if in_cycle {
             lines.push(Line::from(""));
             lines.push(Line::from(Span::styled(
-                "Exports:",
-                Style::default().bold(),
+                "  WARNING: This file is in a cycle!  ",
+                Style::default().fg(Color::Red).bold().bg(Color::DarkGray),
             )));
-            for export in node.exports.iter().take(5) {
-                lines.push(Line::from(format!("  - {}", export)));
-            }
-            if node.exports.len() > 5 {
-                lines.push(Line::from(format!(
-                    "  ... and {} more",
-                    node.exports.len() - 5
-                )));
-            }
+            lines.push(Line::from(""));
         }
 
-        // Add summary if available
-        if let Some(summary) = &node.summary {
+        // File path and full path
+        lines.push(Line::from(vec![
+            Span::styled("File: ", Style::default().bold()),
+            Span::raw(&node.relative_path),
+        ]));
+        lines.push(Line::from(vec![
+            Span::styled("Path: ", Style::default().bold()),
+            Span::styled(
+                node.path.display().to_string(),
+                Style::default().fg(Color::DarkGray),
+            ),
+        ]));
+        lines.push(Line::from(""));
+
+        // Layer and metadata
+        lines.push(Line::from(vec![
+            Span::styled("Layer: ", Style::default().bold()),
+            Span::styled(
+                node.layer.to_string(),
+                Style::default().fg(layer_color(node.layer)),
+            ),
+        ]));
+        lines.push(Line::from(vec![
+            Span::styled("Depth: ", Style::default().bold()),
+            Span::raw(node.depth.to_string()),
+        ]));
+        lines.push(Line::from(vec![
+            Span::styled("LOC: ", Style::default().bold()),
+            Span::raw(node.loc.to_string()),
+        ]));
+        lines.push(Line::from(""));
+
+        // Imports list
+        let imports: Vec<_> = app
+            .graph
+            .neighbors_directed(selected_idx, petgraph::Direction::Outgoing)
+            .collect();
+        lines.push(Line::from(vec![
+            Span::styled("Imports (", Style::default().bold()),
+            Span::styled(imports.len().to_string(), Style::default().bold()),
+            Span::styled("):", Style::default().bold()),
+        ]));
+
+        if imports.is_empty() {
+            lines.push(Line::from("  (none)"));
+        } else {
+            for import_idx in imports.iter().take(10) {
+                let import_node = &app.graph[*import_idx];
+                lines.push(Line::from(vec![
+                    Span::raw("  - "),
+                    Span::styled(
+                        &import_node.relative_path,
+                        Style::default().fg(Color::Cyan),
+                    ),
+                ]));
+            }
+            if imports.len() > 10 {
+                lines.push(Line::from(format!("  ... and {} more", imports.len() - 10)));
+            }
+        }
+        lines.push(Line::from(""));
+
+        // Dependents list
+        let dependents: Vec<_> = app
+            .graph
+            .neighbors_directed(selected_idx, petgraph::Direction::Incoming)
+            .collect();
+        lines.push(Line::from(vec![
+            Span::styled("Dependents (", Style::default().bold()),
+            Span::styled(dependents.len().to_string(), Style::default().bold()),
+            Span::styled("):", Style::default().bold()),
+        ]));
+
+        if dependents.is_empty() {
+            lines.push(Line::from("  (none)"));
+        } else {
+            for dependent_idx in dependents.iter().take(10) {
+                let dependent_node = &app.graph[*dependent_idx];
+                lines.push(Line::from(vec![
+                    Span::raw("  - "),
+                    Span::styled(
+                        &dependent_node.relative_path,
+                        Style::default().fg(Color::Magenta),
+                    ),
+                ]));
+            }
+            if dependents.len() > 10 {
+                lines.push(Line::from(format!("  ... and {} more", dependents.len() - 10)));
+            }
+        }
+        lines.push(Line::from(""));
+
+        // Exports
+        if !node.exports.is_empty() {
+            lines.push(Line::from(vec![
+                Span::styled("Exports (", Style::default().bold()),
+                Span::styled(node.exports.len().to_string(), Style::default().bold()),
+                Span::styled("):", Style::default().bold()),
+            ]));
+            for export in node.exports.iter().take(10) {
+                lines.push(Line::from(format!("  - {}", export)));
+            }
+            if node.exports.len() > 10 {
+                lines.push(Line::from(format!(
+                    "  ... and {} more",
+                    node.exports.len() - 10
+                )));
+            }
             lines.push(Line::from(""));
+        }
+
+        // Summary/Doc comment
+        if let Some(summary) = &node.summary {
             lines.push(Line::from(Span::styled(
                 "Summary:",
                 Style::default().bold(),
             )));
-            lines.push(Line::from(summary.as_str()));
+            // Wrap long summaries
+            for line in summary.lines().take(5) {
+                lines.push(Line::from(format!("  {}", line)));
+            }
+            if summary.lines().count() > 5 {
+                lines.push(Line::from("  ..."));
+            }
+        }
+
+        // Apply scroll offset
+        if app.details_scroll > 0 && app.details_scroll < lines.len() {
+            lines = lines.into_iter().skip(app.details_scroll).collect();
         }
 
         lines
@@ -209,8 +284,9 @@ fn render_details_panel(f: &mut Frame, app: &App, area: Rect) {
 fn render_alerts_panel(f: &mut Frame, app: &App, area: Rect) {
     let cycles_count = app.analysis.cycles.len();
     let violations_count = app.analysis.violations.len();
+    let total_issues = cycles_count + violations_count;
 
-    let title = format!(" Alerts ({} issues) ", cycles_count + violations_count);
+    let title = format!(" Alerts ({} issues) ", total_issues);
 
     let block = Block::default()
         .title(title)
@@ -221,62 +297,8 @@ fn render_alerts_panel(f: &mut Frame, app: &App, area: Rect) {
             Style::default()
         });
 
-    let mut lines = vec![];
-
-    if cycles_count > 0 {
-        lines.push(Line::from(Span::styled(
-            format!("Cycles ({})", cycles_count),
-            Style::default().fg(Color::Red).bold(),
-        )));
-        lines.push(Line::from(""));
-
-        for (i, cycle) in app.analysis.cycles.iter().take(5).enumerate() {
-            lines.push(Line::from(format!("{}. Cycle with {} files:", i + 1, cycle.nodes.len())));
-            for node_path in cycle.nodes.iter().take(3) {
-                lines.push(Line::from(format!("   - {}", node_path)));
-            }
-            if cycle.nodes.len() > 3 {
-                lines.push(Line::from(format!("   ... and {} more", cycle.nodes.len() - 3)));
-            }
-            lines.push(Line::from(""));
-        }
-
-        if cycles_count > 5 {
-            lines.push(Line::from(format!("... and {} more cycles", cycles_count - 5)));
-            lines.push(Line::from(""));
-        }
-    }
-
-    if violations_count > 0 {
-        lines.push(Line::from(Span::styled(
-            format!("Layer Violations ({})", violations_count),
-            Style::default().fg(Color::Red).bold(),
-        )));
-        lines.push(Line::from(""));
-
-        for (i, violation) in app.analysis.violations.iter().take(5).enumerate() {
-            lines.push(Line::from(vec![
-                Span::raw(format!("{}. ", i + 1)),
-                Span::styled(&violation.file, Style::default().fg(Color::Cyan)),
-            ]));
-            lines.push(Line::from(format!(
-                "   {} -> {} imports {}",
-                violation.from_layer, violation.to_layer, violation.imports
-            )));
-            lines.push(Line::from(format!("   Reason: {}", violation.reason)));
-            lines.push(Line::from(""));
-        }
-
-        if violations_count > 5 {
-            lines.push(Line::from(format!(
-                "... and {} more violations",
-                violations_count - 5
-            )));
-        }
-    }
-
-    if cycles_count == 0 && violations_count == 0 {
-        lines = vec![
+    if total_issues == 0 {
+        let lines = vec![
             Line::from(""),
             Line::from(Span::styled(
                 "No issues found!",
@@ -286,12 +308,160 @@ fn render_alerts_panel(f: &mut Frame, app: &App, area: Rect) {
             Line::from("Your codebase has:"),
             Line::from("  - No circular dependencies"),
             Line::from("  - No layer violations"),
+            Line::from(""),
+            Line::from("Additional metrics:"),
+            Line::from(format!("  - Max depth: {}", app.analysis.max_depth)),
+            Line::from(format!("  - Entry points: {}", app.analysis.entry_points.len())),
+            Line::from(format!("  - High fan-out files: {}", app.analysis.high_fan_out.len())),
+            Line::from(format!("  - High fan-in files: {}", app.analysis.high_fan_in.len())),
         ];
+
+        let paragraph = Paragraph::new(lines).block(block);
+        f.render_widget(paragraph, area);
+        return;
     }
 
-    let paragraph = Paragraph::new(lines).block(block);
+    let mut items = vec![];
+    let mut alert_index = 0;
 
-    f.render_widget(paragraph, area);
+    // Cycles section
+    if cycles_count > 0 {
+        items.push(ListItem::new(Line::from(Span::styled(
+            format!("CYCLES ({})", cycles_count),
+            Style::default().fg(Color::Red).bold(),
+        ))));
+        items.push(ListItem::new(Line::from("")));
+
+        for (i, cycle) in app.analysis.cycles.iter().enumerate() {
+            let is_selected = app.panel == ActivePanel::Alerts && app.selected_alert == alert_index;
+            let style = if is_selected {
+                Style::default().bg(Color::DarkGray).bold()
+            } else {
+                Style::default()
+            };
+
+            // Cycle header
+            let cycle_path = cycle.nodes.join(" -> ");
+            let short_path = if cycle_path.len() > 60 {
+                format!("{}...", &cycle_path[..57])
+            } else {
+                cycle_path
+            };
+
+            items.push(ListItem::new(Line::from(vec![
+                Span::styled(format!("{}. ", i + 1), style),
+                Span::styled(short_path, style.fg(Color::Red)),
+            ])));
+
+            // Show files in cycle
+            for node_path in cycle.nodes.iter().take(4) {
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled("   ", style),
+                    Span::styled(node_path, style.fg(Color::Cyan)),
+                ])));
+            }
+            if cycle.nodes.len() > 4 {
+                items.push(ListItem::new(Line::from(Span::styled(
+                    format!("   ... and {} more", cycle.nodes.len() - 4),
+                    style,
+                ))));
+            }
+
+            // Fix suggestion
+            if let Some((from, _to, line)) = cycle.edges.first() {
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled("   Fix: ", style.fg(Color::Yellow)),
+                    Span::styled(format!("Remove import at {}:{}", from, line), style),
+                ])));
+            }
+
+            items.push(ListItem::new(Line::from("")));
+            alert_index += 1;
+        }
+    }
+
+    // Violations section
+    if violations_count > 0 {
+        items.push(ListItem::new(Line::from(Span::styled(
+            format!("LAYER VIOLATIONS ({})", violations_count),
+            Style::default().fg(Color::Red).bold(),
+        ))));
+        items.push(ListItem::new(Line::from("")));
+
+        for (i, violation) in app.analysis.violations.iter().enumerate() {
+            let is_selected = app.panel == ActivePanel::Alerts && app.selected_alert == alert_index;
+            let style = if is_selected {
+                Style::default().bg(Color::DarkGray).bold()
+            } else {
+                Style::default()
+            };
+
+            items.push(ListItem::new(Line::from(vec![
+                Span::styled(format!("{}. ", i + 1), style),
+                Span::styled(&violation.file, style.fg(Color::Cyan)),
+                Span::styled(format!(" (line {})", violation.line), style.fg(Color::DarkGray)),
+            ])));
+
+            items.push(ListItem::new(Line::from(vec![
+                Span::styled("   ", style),
+                Span::styled(
+                    format!("{} ", violation.from_layer),
+                    style.fg(layer_color(violation.from_layer)),
+                ),
+                Span::styled("imports ", style),
+                Span::styled(
+                    format!("{} ", violation.to_layer),
+                    style.fg(layer_color(violation.to_layer)),
+                ),
+                Span::styled(format!("({})", violation.imports), style.fg(Color::DarkGray)),
+            ])));
+
+            items.push(ListItem::new(Line::from(vec![
+                Span::styled("   Reason: ", style),
+                Span::styled(&violation.reason, style.fg(Color::Gray)),
+            ])));
+
+            items.push(ListItem::new(Line::from(vec![
+                Span::styled("   Fix: ", style.fg(Color::Yellow)),
+                Span::styled(violation.fix_suggestion(), style),
+            ])));
+
+            items.push(ListItem::new(Line::from("")));
+            alert_index += 1;
+        }
+    }
+
+    // Threshold warnings section
+    let high_fan_out_count = app.analysis.high_fan_out.len();
+    let high_fan_in_count = app.analysis.high_fan_in.len();
+
+    if high_fan_out_count > 0 || high_fan_in_count > 0 {
+        items.push(ListItem::new(Line::from(Span::styled(
+            "THRESHOLD WARNINGS",
+            Style::default().fg(Color::Yellow).bold(),
+        ))));
+        items.push(ListItem::new(Line::from("")));
+
+        for (file, count) in app.analysis.high_fan_out.iter().take(3) {
+            items.push(ListItem::new(Line::from(vec![
+                Span::styled("  High fan-out: ", Style::default().fg(Color::Yellow)),
+                Span::styled(file, Style::default().fg(Color::Cyan)),
+                Span::styled(format!(" ({} imports)", count), Style::default()),
+            ])));
+        }
+
+        for (file, count) in app.analysis.high_fan_in.iter().take(3) {
+            items.push(ListItem::new(Line::from(vec![
+                Span::styled("  High fan-in: ", Style::default().fg(Color::Yellow)),
+                Span::styled(file, Style::default().fg(Color::Cyan)),
+                Span::styled(format!(" ({} dependents)", count), Style::default()),
+            ])));
+        }
+    }
+
+    let list = List::new(items).block(block);
+
+    f.render_widget(list, area);
 }
 
 /// Render the status bar at the bottom.

@@ -51,6 +51,10 @@ pub struct App {
     pub layout: GraphLayout,
     /// Viewport scroll offset (x, y)
     pub viewport_offset: (i16, i16),
+    /// Details panel scroll offset
+    pub details_scroll: usize,
+    /// Selected alert index in alerts panel
+    pub selected_alert: usize,
 }
 
 impl App {
@@ -71,6 +75,8 @@ impl App {
             should_quit: false,
             layout,
             viewport_offset: (0, 0),
+            details_scroll: 0,
+            selected_alert: 0,
         }
     }
 
@@ -169,5 +175,64 @@ impl App {
     pub fn scroll_viewport(&mut self, dx: i16, dy: i16) {
         self.viewport_offset.0 = (self.viewport_offset.0 + dx).clamp(-100, 100);
         self.viewport_offset.1 = (self.viewport_offset.1 + dy).clamp(-100, 100);
+    }
+
+    /// Scroll the details panel down.
+    pub fn scroll_details_down(&mut self) {
+        self.details_scroll = self.details_scroll.saturating_add(1);
+    }
+
+    /// Scroll the details panel up.
+    pub fn scroll_details_up(&mut self) {
+        self.details_scroll = self.details_scroll.saturating_sub(1);
+    }
+
+    /// Move to the next alert in the alerts panel.
+    pub fn next_alert(&mut self) {
+        let total_alerts = self.analysis.cycles.len() + self.analysis.violations.len();
+        if total_alerts > 0 {
+            self.selected_alert = (self.selected_alert + 1) % total_alerts;
+        }
+    }
+
+    /// Move to the previous alert in the alerts panel.
+    pub fn prev_alert(&mut self) {
+        let total_alerts = self.analysis.cycles.len() + self.analysis.violations.len();
+        if total_alerts > 0 {
+            self.selected_alert = if self.selected_alert == 0 {
+                total_alerts - 1
+            } else {
+                self.selected_alert - 1
+            };
+        }
+    }
+
+    /// Jump to the file node associated with the currently selected alert.
+    pub fn jump_to_selected_alert(&mut self) {
+        let cycles_count = self.analysis.cycles.len();
+
+        if self.selected_alert < cycles_count {
+            // Selected alert is a cycle
+            let cycle = &self.analysis.cycles[self.selected_alert];
+            if let Some(first_file) = cycle.nodes.first() {
+                // Find the node index for this file
+                if let Some(idx) = self.graph.node_indices()
+                    .find(|&idx| &self.graph[idx].relative_path == first_file) {
+                    self.selected_node = Some(idx);
+                    self.panel = ActivePanel::Graph;
+                }
+            }
+        } else {
+            // Selected alert is a violation
+            let violation_idx = self.selected_alert - cycles_count;
+            if let Some(violation) = self.analysis.violations.get(violation_idx) {
+                // Find the node index for the violating file
+                if let Some(idx) = self.graph.node_indices()
+                    .find(|&idx| self.graph[idx].relative_path == violation.file) {
+                    self.selected_node = Some(idx);
+                    self.panel = ActivePanel::Graph;
+                }
+            }
+        }
     }
 }

@@ -39,15 +39,19 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) {
             };
         }
 
-        // Navigation (arrows)
-        KeyCode::Up => {
-            if app.panel == ActivePanel::Graph {
-                app.select_prev_in_layer();
+        // Navigation (arrows and j/k)
+        KeyCode::Up | KeyCode::Char('k') | KeyCode::Char('K') => {
+            match app.panel {
+                ActivePanel::Graph => app.select_prev_in_layer(),
+                ActivePanel::Details => app.scroll_details_up(),
+                ActivePanel::Alerts => app.prev_alert(),
             }
         }
-        KeyCode::Down => {
-            if app.panel == ActivePanel::Graph {
-                app.select_next_in_layer();
+        KeyCode::Down | KeyCode::Char('j') | KeyCode::Char('J') => {
+            match app.panel {
+                ActivePanel::Graph => app.select_next_in_layer(),
+                ActivePanel::Details => app.scroll_details_down(),
+                ActivePanel::Alerts => app.next_alert(),
             }
         }
         KeyCode::Left => {
@@ -58,6 +62,13 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) {
         KeyCode::Right => {
             if app.panel == ActivePanel::Graph {
                 app.select_next_layer();
+            }
+        }
+
+        // Enter key: Jump to file from alert
+        KeyCode::Enter => {
+            if app.panel == ActivePanel::Alerts {
+                app.jump_to_selected_alert();
             }
         }
 
