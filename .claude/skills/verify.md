@@ -11,14 +11,8 @@ Comprehensive build validation for all targets before merge or release.
 ## Usage
 
 ```
-/verify [--skip-wasm]
+/verify
 ```
-
-## Options
-
-| Option | Description |
-|--------|-------------|
-| `--skip-wasm` | Skip WASM target check (useful if wasm target not installed) |
 
 ## What It Does
 
@@ -27,7 +21,6 @@ Comprehensive build validation for all targets before merge or release.
 3. **Debug build**: `cargo build --all-targets`
 4. **Release build**: `cargo build --release --all-targets`
 5. **Run tests**: `cargo test --all-targets`
-6. **WASM check**: `cargo check --target wasm32-unknown-unknown -p calc_gui`
 
 ## Output
 
@@ -40,7 +33,6 @@ VERIFICATION REPORT
 [PASS] Debug build (12.3s)
 [PASS] Release build (45.2s)
 [PASS] Tests (36 passed, 0 failed)
-[PASS] WASM target
 
 RESULT: ALL CHECKS PASS - Ready to merge
 ```
@@ -68,7 +60,6 @@ cargo clippy --all-targets -- -D warnings
 cargo build --all-targets
 cargo build --release --all-targets
 cargo test --all-targets
-cargo check --target wasm32-unknown-unknown -p calc_gui
 ```
 
 ## Exit Codes

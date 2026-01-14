@@ -1,4 +1,4 @@
-# CLAUDE.md - Stratify
+# CLAUDE.md - Dendrite
 
 ## RULE 1 - ABSOLUTE (DO NOT EVER VIOLATE THIS)
 
@@ -180,7 +180,7 @@ tools:
 | Agent | Model | Purpose |
 |-------|-------|---------|
 | coder-sonnet | sonnet | Fast, precise code changes with atomic commits |
-| build-verifier | sonnet | Validates all targets (native + WASM) compile |
+| build-verifier | sonnet | Validates all targets compile and pass tests |
 | gemini-analyzer | sonnet | Large-context analysis via Gemini CLI (1M+ context) |
 
 ### Disabling Agents
@@ -232,6 +232,7 @@ agent: coder-sonnet
 |-------|---------|
 | `/test` | Run cargo test with optional filtering |
 | `/check` | Run cargo check + clippy on all targets |
+| `/verify` | Full build verification before merge/release |
 
 ### Skill Hot-Reload
 
@@ -243,23 +244,25 @@ Skills in `.claude/skills/` are automatically discovered without restart. Edit o
 
 ## Project Overview
 
-Stratify is a structural engineering calculation application for wood and steel design. It provides:
+Dendrite is a codebase mapping and dependency analysis tool for systems programmers. It provides:
 
-- **calc_core**: Core calculation library (beams, columns, materials, NDS factors, PDF generation)
-- **calc_gui**: Iced-based GUI application (native + WASM/WebGPU)
-- **calc_cli**: Ratatui-based terminal UI
+- **Dependency Graph Visualization** - Interactive TUI with hierarchical layout
+- **Cycle Detection** - Find and highlight circular imports before they become problems
+- **Layer Enforcement** - Define architectural boundaries and catch violations
+- **AI-Ready Output** - Generates `CODEBASE.md` and structured summaries for LLM agents
+- **CI Integration** - Exit codes for automated checks in your pipeline
 
-**Key principle**: Clean, LLM-friendly API. All types are JSON-serializable via serde for integration with AI assistants.
+**Key principle**: Built for operating systems and embedded development where dependency discipline is critical. Primary target is Zig codebases, with future support for assembly and C.
 
 ---
 
 ## Rust Toolchain
 
 - **Rust Edition**: 2021
-- **Targets**: Native (Windows/Mac/Linux) + WASM (wasm32-unknown-unknown)
-- **GUI**: Iced 0.14 with wgpu backend
+- **Target**: Native (Windows/Mac/Linux) - single static binary
 - **TUI**: Ratatui + crossterm
-- **PDF**: Typst integration
+- **Graph**: petgraph for dependency graph data structures
+- **CLI**: clap for argument parsing
 
 ### Build Commands
 
@@ -270,11 +273,11 @@ cargo build
 # Release build
 cargo build --release
 
-# Run GUI
-cargo run --bin calc_gui
+# Run dendrite
+cargo run -- --path ./test_fixtures
 
-# Run CLI
-cargo run --bin calc_cli
+# Run with TUI
+cargo run -- --tui
 
 # Run tests
 cargo test
@@ -287,43 +290,135 @@ cargo clippy --all-targets -- -D warnings
 
 # Format code
 cargo fmt
-
-# WASM build (requires wasm-pack or trunk)
-cargo build --target wasm32-unknown-unknown -p calc_gui
 ```
 
 ---
 
 ## Architecture
 
-### Key Directories
+### Key Directories (Planned)
 
 ```
-stratify/
-  calc_core/           # Core calculation library
-    src/
-      calculations/    # Beam, column, continuous beam analysis
-      equations/       # Documented statics formulas
-      materials/       # Material definitions (lumber, steel)
-      loads/           # Load types, ASCE 7 combinations
-      generated/       # Build-time generated data (materials from TOML)
-      pdf.rs           # PDF generation via Typst
-      project.rs       # Project container and metadata
-      file_io.rs       # Atomic file operations with locking
-  calc_gui/            # Iced GUI application
-    src/
-      ui/              # UI components (panels, modals, inputs)
-      update.rs        # Update checking logic
-  calc_cli/            # Ratatui TUI application
-  data/                # TOML data files for code generation
+dendrite/
+  src/
+    main.rs              # CLI entry point (clap)
+    lib.rs               # Public API surface
+    parser/              # Language-specific parsers
+      mod.rs             # Parser trait and registry
+      zig.rs             # Zig @import extraction
+      asm.rs             # Assembly .include/.extern parsing
+    graph/               # Dependency graph construction
+      mod.rs             # GraphBuilder, DepGraph types
+      node.rs            # FileNode, Layer enum
+      edge.rs            # Import edge with line info
+      analysis.rs        # Cycles, metrics, violations
+    output/              # Output generation
+      mod.rs             # Output orchestration
+      json.rs            # codebase_map.json
+      markdown.rs        # CODEBASE.md, file summaries
+      metrics.rs         # metrics.json
+    config/              # Configuration system
+      mod.rs             # Config parsing and validation
+      layers.rs          # Layer definitions and rules
+    tui/                 # Terminal UI (Ratatui)
+      mod.rs             # App state and main loop
+      ui.rs              # Layout and rendering
+      events.rs          # Keyboard handling
+      graph_view.rs      # ASCII graph visualization
+      details.rs         # File details panel
+      alerts.rs          # Cycles/violations panel
+  test_fixtures/         # Sample Zig projects for testing
+  templates/             # Handlebars templates for markdown
 ```
 
 ### Design Principles
 
-- **Stateless calculations**: Pure functions that take input and return results
-- **JSON-first**: All types implement `Serialize`/`Deserialize`
-- **Rich errors**: Structured error types via `thiserror`, not strings
-- **Generated data**: Material databases generated at build time from TOML
+- **Parallel parsing**: Use rayon for multi-core file processing
+- **Clean graph API**: petgraph DiGraph with typed nodes and edges
+- **Regex-based parsing**: Fast, simple extraction (not full AST)
+- **Layered analysis**: Build graph first, then run analysis passes
+- **JSON-first**: All output types implement `Serialize`/`Deserialize`
+
+---
+
+## Core Types
+
+### Parser Types
+
+```rust
+pub struct ZigImport {
+    pub target: String,     // "scheduler.zig" or "std"
+    pub line: usize,        // Line number for error messages
+    pub is_std: bool,       // true for @import("std")
+}
+
+pub struct ZigFile {
+    pub path: PathBuf,
+    pub imports: Vec<ZigImport>,
+    pub doc_comment: Option<String>,  // //! module docs
+    pub exports: Vec<String>,         // pub fn, pub const
+    pub loc: usize,                   // Lines of code
+}
+```
+
+### Graph Types
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Layer {
+    Entry,      // main.zig
+    App,        // shell/*, init.zig
+    Core,       // kernel/*, memory/*
+    Platform,   // platform/*, exceptions.zig
+    Driver,     // drivers/*
+    Arch,       // arch/*
+    Unknown,    // Unclassified files
+}
+
+pub struct FileNode {
+    pub path: PathBuf,
+    pub relative_path: String,
+    pub layer: Layer,
+    pub depth: usize,
+    pub summary: Option<String>,
+    pub exports: Vec<String>,
+    pub loc: usize,
+}
+
+pub struct Import {
+    pub line: usize,
+}
+
+pub type DepGraph = DiGraph<FileNode, Import>;
+```
+
+### Analysis Types
+
+```rust
+pub struct Cycle {
+    pub nodes: Vec<String>,      // File paths in cycle
+    pub edges: Vec<(String, String, usize)>,  // (from, to, line)
+}
+
+pub struct LayerViolation {
+    pub file: String,
+    pub imports: String,
+    pub from_layer: Layer,
+    pub to_layer: Layer,
+    pub line: usize,
+    pub reason: String,
+}
+
+pub struct AnalysisResult {
+    pub cycles: Vec<Cycle>,
+    pub violations: Vec<LayerViolation>,
+    pub max_depth: usize,
+    pub deepest_path: Vec<String>,
+    pub high_fan_out: Vec<(String, usize)>,
+    pub high_fan_in: Vec<(String, usize)>,
+    pub orphans: Vec<String>,
+}
+```
 
 ---
 
@@ -332,250 +427,126 @@ stratify/
 ### Error Handling
 
 ```rust
-// Use thiserror for structured errors
-#[derive(Debug, thiserror::Error)]
-pub enum CalcError {
-    #[error("Invalid span: {0} must be positive")]
-    InvalidSpan(f64),
-    #[error("Material not found: {0}")]
-    MaterialNotFound(String),
-    #[error("IO error: {0}")]
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum DendriteError {
+    #[error("Failed to read file: {0}")]
     Io(#[from] std::io::Error),
+    #[error("Invalid import path: {0}")]
+    InvalidImport(String),
+    #[error("Config error: {0}")]
+    Config(String),
+    #[error("Unresolved import: {target} in {file}:{line}")]
+    UnresolvedImport {
+        file: String,
+        target: String,
+        line: usize,
+    },
 }
 
-// Use Result<T, E> consistently
-pub fn analyze_beam(input: BeamInput) -> Result<BeamResult, CalcError> {
-    if input.span <= 0.0 {
-        return Err(CalcError::InvalidSpan(input.span));
-    }
-    // ...
-}
-
-// Use ? for propagation
-pub fn load_and_analyze(path: &Path) -> Result<BeamResult, CalcError> {
-    let project = load_project(path)?;  // Propagates IO errors
-    let input = project.get_beam_input()?;
-    analyze_beam(input)
-}
+pub type Result<T> = std::result::Result<T, DendriteError>;
 ```
 
 ### Option Handling
 
 ```rust
-// Prefer match/if-let over .unwrap()
-if let Some(material) = materials.get(&name) {
-    // Use material
-} else {
-    return Err(CalcError::MaterialNotFound(name));
-}
-
-// Use .unwrap_or_default() or .unwrap_or() for safe defaults
-let deflection_limit = config.deflection_limit.unwrap_or(360.0);
-
 // Use .ok_or() to convert Option to Result
-let material = materials.get(&name)
-    .ok_or_else(|| CalcError::MaterialNotFound(name.clone()))?;
+let layer = config.layers.get(&pattern)
+    .ok_or_else(|| DendriteError::Config(format!("Unknown layer: {}", pattern)))?;
+
+// Use .unwrap_or_default() for safe defaults
+let exclude = config.exclude.clone().unwrap_or_default();
 ```
 
-### Struct Design
+### Regex Parsing
 
 ```rust
-// Use derive macros consistently
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BeamInput {
-    pub span: f64,           // feet
-    pub width: f64,          // inches
-    pub depth: f64,          // inches
-    pub material: Material,
-    pub loads: Vec<LoadCase>,
-}
+use regex::Regex;
+use once_cell::sync::Lazy;
 
-// Use builder pattern for complex construction
-impl BeamInput {
-    pub fn new(span: f64, width: f64, depth: f64) -> Self {
-        Self {
-            span,
-            width,
-            depth,
-            material: Material::default(),
-            loads: Vec::new(),
-        }
-    }
+static IMPORT_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"@import\("([^"]+)"\)"#).unwrap()
+});
 
-    pub fn with_material(mut self, material: Material) -> Self {
-        self.material = material;
-        self
-    }
+pub fn extract_imports(source: &str) -> Vec<ZigImport> {
+    IMPORT_REGEX.captures_iter(source)
+        .enumerate()
+        .map(|(line, cap)| ZigImport {
+            target: cap[1].to_string(),
+            line: line + 1,  // 1-indexed
+            is_std: &cap[1] == "std",
+        })
+        .collect()
 }
 ```
 
-### Module Organization
+### Parallel File Processing
 
 ```rust
-// In mod.rs or lib.rs - re-export public API
-pub mod calculations;
-pub mod materials;
+use rayon::prelude::*;
 
-// Re-export commonly used types at crate root
-pub use calculations::{BeamResult, ColumnResult};
-pub use materials::Material;
-
-// Keep internal helpers private
-mod internal_utils;  // Not `pub mod`
-```
-
-### Iterators and Closures
-
-```rust
-// Prefer iterator chains over manual loops
-let max_moment = load_cases.iter()
-    .map(|lc| calculate_moment(lc, span))
-    .fold(0.0, f64::max);
-
-// Use collect with turbofish for type inference
-let valid_loads: Vec<_> = loads.iter()
-    .filter(|l| l.magnitude > 0.0)
-    .collect();
-
-// Use for loops when side effects are needed
-for load in &mut loads {
-    load.apply_factor(factor);
-}
-```
-
-### Testing
-
-```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_beam_moment_simple_span() {
-        let input = BeamInput::new(10.0, 3.5, 9.25);
-        let result = analyze_beam(input).unwrap();
-
-        // Use approx comparisons for floats
-        assert!((result.max_moment - 12500.0).abs() < 0.1);
-    }
-
-    #[test]
-    fn test_invalid_span_returns_error() {
-        let input = BeamInput::new(-5.0, 3.5, 9.25);
-        assert!(matches!(
-            analyze_beam(input),
-            Err(CalcError::InvalidSpan(_))
-        ));
-    }
-}
-```
-
-### Documentation
-
-```rust
-/// Analyzes a simply-supported beam under the given loads.
-///
-/// # Arguments
-///
-/// * `input` - Beam geometry, material, and load cases
-///
-/// # Returns
-///
-/// Beam analysis results including moments, shears, and deflections.
-///
-/// # Errors
-///
-/// Returns `CalcError::InvalidSpan` if span is not positive.
-///
-/// # Example
-///
-/// ```
-/// let input = BeamInput::new(12.0, 3.5, 11.25);
-/// let result = analyze_beam(input)?;
-/// println!("Max moment: {} lb-ft", result.max_moment);
-/// ```
-pub fn analyze_beam(input: BeamInput) -> Result<BeamResult, CalcError> {
-    // ...
+pub fn parse_all_files(paths: &[PathBuf]) -> Vec<Result<ZigFile>> {
+    paths.par_iter()
+        .map(|path| parse_file(path))
+        .collect()
 }
 ```
 
 ---
 
-## GUI Development (Iced)
+## TUI Development (Ratatui)
 
-### Message Pattern
+### App State
 
 ```rust
-#[derive(Debug, Clone)]
-pub enum Message {
-    // User actions
-    SpanChanged(String),
-    MaterialSelected(Material),
-    Calculate,
-
-    // Async results
-    CalculationComplete(Result<BeamResult, CalcError>),
-    UpdateCheckComplete(Option<Version>),
+pub struct App {
+    pub graph: DepGraph,
+    pub analysis: AnalysisResult,
+    pub selected_node: Option<NodeIndex>,
+    pub mode: ViewMode,
+    pub panel: ActivePanel,
+    pub search_query: String,
+    pub viewport: Viewport,
 }
 
-fn update(&mut self, message: Message) -> Command<Message> {
-    match message {
-        Message::SpanChanged(s) => {
-            self.span_input = s;
-            Command::none()
+pub enum ViewMode {
+    Normal,
+    Imports,      // Highlight what this file imports
+    Dependents,   // Highlight what imports this file
+    PathTrace,    // Show path to entry point
+    Search,       // Filter by name
+}
+
+pub enum ActivePanel {
+    Graph,
+    Details,
+    Alerts,
+}
+```
+
+### Event Loop
+
+```rust
+pub fn run(mut app: App) -> io::Result<()> {
+    let mut terminal = setup_terminal()?;
+
+    loop {
+        terminal.draw(|f| ui::render(f, &app))?;
+
+        if event::poll(Duration::from_millis(100))? {
+            if let Event::Key(key) = event::read()? {
+                match handle_key(key, &mut app) {
+                    Some(Action::Quit) => break,
+                    Some(action) => apply_action(action, &mut app),
+                    None => {}
+                }
+            }
         }
-        Message::Calculate => {
-            let input = self.build_input();
-            Command::perform(
-                async move { analyze_beam(input) },
-                Message::CalculationComplete
-            )
-        }
-        // ...
     }
+
+    restore_terminal(terminal)
 }
-```
-
-### View Composition
-
-```rust
-fn view(&self) -> Element<Message> {
-    let content = column![
-        self.view_toolbar(),
-        row![
-            self.view_input_panel(),
-            self.view_results_panel(),
-        ],
-        self.view_status_bar(),
-    ];
-
-    container(content)
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
-}
-```
-
----
-
-## WASM Considerations
-
-```rust
-// Use cfg attributes for platform-specific code
-#[cfg(not(target_arch = "wasm32"))]
-fn save_file(path: &Path, data: &[u8]) -> io::Result<()> {
-    fs::write(path, data)
-}
-
-#[cfg(target_arch = "wasm32")]
-fn save_file(_path: &Path, data: &[u8]) -> io::Result<()> {
-    // Use web-sys to trigger browser download
-    trigger_download(data)
-}
-
-// fs2 (file locking) is native-only
-#[cfg(not(target_arch = "wasm32"))]
-use fs2::FileExt;
 ```
 
 ---
@@ -592,10 +563,10 @@ cargo test
 cargo test -- --nocapture
 
 # Run specific test
-cargo test test_beam_moment
+cargo test test_cycle_detection
 
-# Run tests in specific crate
-cargo test -p calc_core
+# Run parser tests only
+cargo test parser::
 
 # Run ignored (slow) tests
 cargo test -- --ignored
@@ -605,37 +576,76 @@ cargo test -- --ignored
 
 - Unit tests go in the same file as the code (`#[cfg(test)] mod tests`)
 - Integration tests go in `tests/` directory
-- Use `proptest` or `quickcheck` for property-based testing when appropriate
+- Test fixtures go in `test_fixtures/` with sample Zig projects
+
+### Test Fixtures
+
+```
+test_fixtures/
+  simple/               # Basic Zig project, no issues
+    main.zig
+    lib.zig
+  with_cycle/           # Contains circular imports
+    a.zig -> b.zig -> a.zig
+  layered/              # Multi-layer project
+    main.zig
+    kernel/
+    drivers/
+    arch/
+```
 
 ---
 
 ## Common Development Workflows
 
-### Adding a New Calculation Type
+### Adding a New Language Parser
 
-1. **Define types** in `calc_core/src/calculations/`
-   - Input struct with `Serialize`/`Deserialize`
-   - Result struct with calculated values
-   - Error variants if needed
+1. Create `src/parser/{lang}.rs`
+2. Implement the `Parser` trait:
+   ```rust
+   pub trait Parser {
+       fn extensions(&self) -> &[&str];
+       fn parse(&self, source: &str, path: &Path) -> Result<ParseResult>;
+   }
+   ```
+3. Register in `src/parser/mod.rs`
+4. Add test fixtures in `test_fixtures/`
+5. Write unit tests
 
-2. **Implement calculation** as pure function
-   - Take input, return `Result<Output, CalcError>`
-   - No side effects, no global state
+### Adding a New Analysis Pass
 
-3. **Add tests** in same file or `tests/`
+1. Add function in `src/graph/analysis.rs`
+2. Add result type to `AnalysisResult`
+3. Call from `DepGraph::analyze()`
+4. Add to JSON/markdown output
+5. Write tests with fixture graphs
 
-4. **Wire up GUI** in `calc_gui/src/ui/`
-   - Input panel component
-   - Results panel component
-   - Message variants for user actions
+### Adding a TUI Feature
 
-5. **Export from lib.rs** if public API
+1. Add state to `App` struct if needed
+2. Add keybinding in `events.rs`
+3. Update rendering in `ui.rs`
+4. Add to help overlay
 
-### Adding a New Material
+---
 
-1. Add entry to `data/materials.toml`
-2. Rebuild to regenerate `calc_core/src/generated/material_data.rs`
-3. Material is automatically available via `Material::lookup()`
+## Roadmap Task IDs
+
+Use task IDs from ROADMAP.md in commit messages:
+
+```bash
+git commit -m "1.2.3: Handle imports inside comments"
+```
+
+Phases:
+1. **Foundation** - CLI, parsing, graph, JSON output
+2. **Analysis** - Cycles, metrics, layer enforcement
+3. **Markdown** - CODEBASE.md, file summaries
+4. **Config** - dendrite.toml, custom layers/rules
+5. **TUI** - Interactive graph exploration
+6. **Parsers** - Assembly, C support
+7. **Advanced** - Watch mode, queries
+8. **Distribution** - Cross-platform releases
 
 ---
 
@@ -643,11 +653,10 @@ cargo test -- --ignored
 
 ### Critical - Must Fix Immediately
 
-- `.unwrap()` or `.expect()` on user input (panic in release)
-- Index out of bounds (`slice[i]` without bounds check)
-- Integer overflow in release builds
-- Deadlocks in async code
-- Memory leaks (though rare in Rust)
+- `.unwrap()` or `.expect()` on file I/O (panic in release)
+- Index out of bounds in graph traversal
+- Infinite loop in cycle detection
+- Terminal left in raw mode after panic
 
 ### Important - Fix Before Merge
 
@@ -655,12 +664,11 @@ cargo test -- --ignored
 - Clippy warnings (especially `clippy::pedantic` findings)
 - Inconsistent public API (missing `pub` or wrong visibility)
 - Missing documentation on public items
-- Non-idiomatic code patterns
 
 ### Contextual - Address When Convenient
 
 - TODO/FIXME comments
-- Unused imports or variables (compiler warns)
+- Unused imports or variables
 - Suboptimal iterator usage
 - Missing `#[must_use]` on functions returning Result
 
@@ -675,7 +683,7 @@ cargo test -- --ignored
 - Run `cargo fmt` to maintain consistent style
 - Keep dependencies minimal - prefer std library when possible
 
-**The goal**: A clean, well-documented calculation library that both humans and LLMs can understand and extend.
+**The goal**: A fast, reliable dependency analysis tool that helps developers maintain clean codebases.
 
 ---
 

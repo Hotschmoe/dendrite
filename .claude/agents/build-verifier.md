@@ -25,8 +25,7 @@ Use this agent when:
 3. **Build debug** - `cargo build --all-targets`
 4. **Build release** - `cargo build --release --all-targets`
 5. **Run tests** - `cargo test --all-targets`
-6. **Check WASM target** - `cargo check --target wasm32-unknown-unknown -p calc_gui`
-7. **Report results** - build success/failure, warnings, test summary
+6. **Report results** - build success/failure, warnings, test summary
 
 ## Output Format
 
@@ -41,13 +40,10 @@ BUILD RESULTS:
 --------------
 debug:   PASS (12.3s)
 release: PASS (45.2s)
-wasm32:  PASS (8.1s)
 
 TEST RESULTS:
 -------------
-calc_core: 24 passed, 0 failed
-calc_gui:  8 passed, 0 failed
-calc_cli:  4 passed, 0 failed
+dendrite: 24 passed, 0 failed
 
 RESULT: ALL CHECKS PASS
 ```
@@ -68,5 +64,4 @@ cargo clippy --all-targets -- -D warnings
 cargo build --all-targets
 cargo build --release --all-targets
 cargo test --all-targets
-cargo check --target wasm32-unknown-unknown -p calc_gui
 ```
