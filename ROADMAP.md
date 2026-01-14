@@ -343,24 +343,24 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 5.1.1 | Add ratatui and crossterm dependencies | ⬜ | dendrite-wmf | TUI framework |
-| 5.1.2 | Create `tui/` module structure | ⬜ | dendrite-zqp | app.rs, ui.rs, events.rs |
-| 5.1.3 | Implement basic app state struct | ⬜ | dendrite-bwf | graph, selected_node, mode |
-| 5.1.4 | Implement terminal setup/teardown | ⬜ | dendrite-t99 | Raw mode, alternate screen |
-| 5.1.5 | Implement main event loop | ⬜ | dendrite-c9t | Poll events, update state, render |
-| 5.1.6 | Implement graceful exit (q key) | ⬜ | dendrite-b8f | Restore terminal properly |
-| 5.1.7 | Handle terminal resize | ⬜ | dendrite-xr8 | Redraw on SIGWINCH |
-| 5.1.8 | Add panic hook to restore terminal | ⬜ | dendrite-9hk | Don't leave terminal broken |
+| 5.1.1 | Add ratatui and crossterm dependencies | ✅ | dendrite-wmf | TUI framework |
+| 5.1.2 | Create `tui/` module structure | ✅ | dendrite-zqp | app.rs, ui.rs, events.rs |
+| 5.1.3 | Implement basic app state struct | ✅ | dendrite-bwf | graph, selected_node, mode |
+| 5.1.4 | Implement terminal setup/teardown | ✅ | dendrite-t99 | Raw mode, alternate screen |
+| 5.1.5 | Implement main event loop | ✅ | dendrite-c9t | Poll events, update state, render |
+| 5.1.6 | Implement graceful exit (q key) | ✅ | dendrite-b8f | Restore terminal properly |
+| 5.1.7 | Handle terminal resize | ✅ | dendrite-xr8 | Redraw on SIGWINCH |
+| 5.1.8 | Add panic hook to restore terminal | ✅ | dendrite-9hk | Don't leave terminal broken |
 
 ### Milestone 5.2: Layout System
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 5.2.1 | Design three-panel layout | ⬜ | dendrite-hos | Graph (main), Details (side), Status (bottom) |
-| 5.2.2 | Implement responsive layout | ⬜ | dendrite-vr0k | Adjust panels to terminal size |
-| 5.2.3 | Implement panel borders and titles | ⬜ | dendrite-h1ny | Visual separation |
-| 5.2.4 | Implement tab bar for panel switching | ⬜ | dendrite-ewlw | [G]raph [F]iles [A]lerts |
-| 5.2.5 | Implement status bar | ⬜ | dendrite-yg0n | File count, alerts, help hint |
+| 5.2.1 | Design three-panel layout | ✅ | dendrite-hos | Graph (main), Details (side), Status (bottom) |
+| 5.2.2 | Implement responsive layout | ✅ | dendrite-vr0k | Adjust panels to terminal size |
+| 5.2.3 | Implement panel borders and titles | ✅ | dendrite-h1ny | Visual separation |
+| 5.2.4 | Implement tab bar for panel switching | ✅ | dendrite-ewlw | [G]raph [D]etails [A]lerts |
+| 5.2.5 | Implement status bar | ✅ | dendrite-yg0n | File count, alerts, help hint |
 
 ### Milestone 5.3: Graph View (ASCII)
 
