@@ -77,6 +77,14 @@ fn main() -> Result<()> {
     run(cli)
 }
 
+/// Compute relative path from project root.
+fn relative_path(path: &std::path::Path, root: &std::path::Path) -> String {
+    path.strip_prefix(root)
+        .unwrap_or(path)
+        .to_string_lossy()
+        .to_string()
+}
+
 fn run(cli: Cli) -> Result<()> {
     let start = Instant::now();
 
@@ -182,17 +190,11 @@ fn run(cli: Cli) -> Result<()> {
 
     // Add Zig file nodes
     for zig_file in &zig_files {
-        let relative_path = zig_file
-            .path
-            .strip_prefix(&project_root)
-            .unwrap_or(&zig_file.path)
-            .to_string_lossy()
-            .to_string();
-
+        let rel_path = relative_path(&zig_file.path, &project_root);
         let node = FileNode {
             path: zig_file.path.clone(),
-            relative_path: relative_path.clone(),
-            layer: Layer::from_path(&relative_path),
+            relative_path: rel_path.clone(),
+            layer: Layer::from_path(&rel_path),
             depth: 0,
             summary: zig_file.doc_comment.clone(),
             exports: zig_file.exports.clone(),
@@ -216,17 +218,11 @@ fn run(cli: Cli) -> Result<()> {
 
     // Add Rust file nodes
     for rust_file in &rust_files {
-        let relative_path = rust_file
-            .path
-            .strip_prefix(&project_root)
-            .unwrap_or(&rust_file.path)
-            .to_string_lossy()
-            .to_string();
-
+        let rel_path = relative_path(&rust_file.path, &project_root);
         let node = FileNode {
             path: rust_file.path.clone(),
-            relative_path: relative_path.clone(),
-            layer: Layer::from_path(&relative_path),
+            relative_path: rel_path.clone(),
+            layer: Layer::from_path(&rel_path),
             depth: 0,
             summary: rust_file.doc_comment.clone(),
             exports: rust_file.exports.clone(),
