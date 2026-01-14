@@ -1,6 +1,6 @@
 # Dendrite Development Roadmap
 
-> Last updated: 2025-01-13
+> Last updated: 2026-01-14
 
 This roadmap breaks development into phases, milestones, and atomic tasks. Each task should be completable in a single focused session (30-90 minutes).
 
@@ -22,13 +22,13 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 1.1.1 | Create Cargo.toml with initial dependencies | ⬜ | dendrite-uc5 | petgraph, serde, clap, walkdir, ignore, anyhow, thiserror |
-| 1.1.2 | Set up project directory structure | ⬜ | dendrite-5u8 | src/{parser,graph,output,config}.rs + mod.rs files |
-| 1.1.3 | Create lib.rs with module declarations | ⬜ | dendrite-73g | Public API surface |
-| 1.1.4 | Create main.rs with clap CLI skeleton | ⬜ | dendrite-hkj | --path, --json, --markdown flags |
-| 1.1.5 | Add .gitignore for Rust projects | ⬜ | dendrite-lhj | target/, Cargo.lock (for binary), .dendrite/ |
-| 1.1.6 | Create test fixtures directory | ⬜ | dendrite-4le | test_fixtures/ with sample Zig project |
-| 1.1.7 | Set up basic integration test harness | ⬜ | dendrite-gqx | tests/integration.rs |
+| 1.1.1 | Create Cargo.toml with initial dependencies | ✅ | dendrite-uc5 | petgraph, serde, clap, walkdir, ignore, anyhow, thiserror |
+| 1.1.2 | Set up project directory structure | ✅ | dendrite-5u8 | src/{parser,graph,output,config}.rs + mod.rs files |
+| 1.1.3 | Create lib.rs with module declarations | ✅ | dendrite-73g | Public API surface |
+| 1.1.4 | Create main.rs with clap CLI skeleton | ✅ | dendrite-hkj | --path, --json, --markdown flags |
+| 1.1.5 | Add .gitignore for Rust projects | ✅ | dendrite-lhj | target/, Cargo.lock (for binary), .dendrite/ |
+| 1.1.6 | Create test fixtures directory | ✅ | dendrite-4le | test_fixtures/ with sample Zig project |
+| 1.1.7 | Set up basic integration test harness | ✅ | dendrite-gqx | tests/integration.rs |
 
 ### Milestone 1.2: Language Parsers (Zig & Rust)
 
@@ -38,85 +38,85 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 1.2.1 | Define `ZigImport` struct | ⬜ | dendrite-ixc | target: String, line: usize, is_std: bool |
-| 1.2.2 | Implement `extract_imports()` with regex | ⬜ | dendrite-awo | Match `@import("...")` pattern |
-| 1.2.3 | Write unit tests for basic imports | ⬜ | dendrite-ykf | Single import, multiple imports, multiline |
-| 1.2.4 | Handle edge cases: comments, strings | ⬜ | dendrite-7zf | Don't match imports inside comments or string literals |
-| 1.2.5 | Implement `extract_doc_comment()` | ⬜ | dendrite-93q | Parse `//!` module-level documentation |
-| 1.2.6 | Write tests for doc comment extraction | ⬜ | dendrite-dqb | Empty, single line, multiline |
-| 1.2.7 | Implement `extract_public_decls()` | ⬜ | dendrite-5ub | Find `pub fn`, `pub const`, `pub var` |
-| 1.2.8 | Write tests for public declaration extraction | ⬜ | dendrite-55a | Functions, constants, variables, nested |
-| 1.2.9 | Create `ZigFile` struct combining all extractions | ⬜ | dendrite-6ga | path, imports, doc_comment, exports, loc |
-| 1.2.10 | Implement `parse_file()` orchestrating function | ⬜ | dendrite-9ip | Read file, run all extractors |
-| 1.2.11 | Write integration test: parse real Zig file | ⬜ | dendrite-0xb | Use test_fixtures/simple.zig |
+| 1.2.1 | Define `ZigImport` struct | ✅ | dendrite-ixc | target: String, line: usize, is_std: bool |
+| 1.2.2 | Implement `extract_imports()` with regex | ✅ | dendrite-awo | Match `@import("...")` pattern |
+| 1.2.3 | Write unit tests for basic imports | ✅ | dendrite-ykf | Single import, multiple imports, multiline |
+| 1.2.4 | Handle edge cases: comments, strings | ✅ | dendrite-7zf | Don't match imports inside comments or string literals |
+| 1.2.5 | Implement `extract_doc_comment()` | ✅ | dendrite-93q | Parse `//!` module-level documentation |
+| 1.2.6 | Write tests for doc comment extraction | ✅ | dendrite-dqb | Empty, single line, multiline |
+| 1.2.7 | Implement `extract_public_decls()` | ✅ | dendrite-5ub | Find `pub fn`, `pub const`, `pub var` |
+| 1.2.8 | Write tests for public declaration extraction | ✅ | dendrite-55a | Functions, constants, variables, nested |
+| 1.2.9 | Create `ZigFile` struct combining all extractions | ✅ | dendrite-6ga | path, imports, doc_comment, exports, loc |
+| 1.2.10 | Implement `parse_file()` orchestrating function | ✅ | dendrite-9ip | Read file, run all extractors |
+| 1.2.11 | Write integration test: parse real Zig file | ✅ | dendrite-0xb | Use test_fixtures/simple.zig |
 
 #### Rust Parser
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 1.2.12 | Define `RustImport` struct | ⬜ | dendrite-60tz | path: String, line: usize, kind: Use/Mod/Extern |
-| 1.2.13 | Implement `extract_use_statements()` with regex | ⬜ | dendrite-5wwe | Match `use crate::`, `use super::`, `use std::` |
-| 1.2.14 | Implement `extract_mod_declarations()` | ⬜ | dendrite-y48t | Match `mod foo;` and `mod foo { }` |
-| 1.2.15 | Handle nested use statements | ⬜ | dendrite-4m5p | `use foo::{bar, baz::*}` expansion |
-| 1.2.16 | Write unit tests for Rust imports | ⬜ | dendrite-6rla | use, mod, extern crate patterns |
-| 1.2.17 | Implement `extract_rust_doc_comment()` | ⬜ | dendrite-spdw | Parse `//!` and `///` doc comments |
-| 1.2.18 | Implement `extract_pub_items()` | ⬜ | dendrite-cchq | Find `pub fn`, `pub struct`, `pub enum`, `pub trait` |
-| 1.2.19 | Handle visibility modifiers | ⬜ | dendrite-6ffr | `pub(crate)`, `pub(super)`, `pub(in path)` |
-| 1.2.20 | Create `RustFile` struct | ⬜ | dendrite-xvhb | path, imports, mods, doc_comment, exports, loc |
-| 1.2.21 | Implement Rust `parse_file()` function | ⬜ | dendrite-8j9b | Read file, run all extractors |
-| 1.2.22 | Write integration test: parse dendrite's own src/ | ⬜ | dendrite-1ffu | Dogfooding! |
+| 1.2.12 | Define `RustImport` struct | ✅ | dendrite-60tz | path: String, line: usize, kind: Use/Mod/Extern |
+| 1.2.13 | Implement `extract_use_statements()` with regex | ✅ | dendrite-5wwe | Match `use crate::`, `use super::`, `use std::` |
+| 1.2.14 | Implement `extract_mod_declarations()` | ✅ | dendrite-y48t | Match `mod foo;` and `mod foo { }` |
+| 1.2.15 | Handle nested use statements | ✅ | dendrite-4m5p | `use foo::{bar, baz::*}` expansion |
+| 1.2.16 | Write unit tests for Rust imports | ✅ | dendrite-6rla | use, mod, extern crate patterns |
+| 1.2.17 | Implement `extract_rust_doc_comment()` | ✅ | dendrite-spdw | Parse `//!` and `///` doc comments |
+| 1.2.18 | Implement `extract_pub_items()` | ✅ | dendrite-cchq | Find `pub fn`, `pub struct`, `pub enum`, `pub trait` |
+| 1.2.19 | Handle visibility modifiers | ✅ | dendrite-6ffr | `pub(crate)`, `pub(super)`, `pub(in path)` |
+| 1.2.20 | Create `RustFile` struct | ✅ | dendrite-xvhb | path, imports, mods, doc_comment, exports, loc |
+| 1.2.21 | Implement Rust `parse_file()` function | ✅ | dendrite-8j9b | Read file, run all extractors |
+| 1.2.22 | Write integration test: parse dendrite's own src/ | ✅ | dendrite-1ffu | Dogfooding! |
 | 1.2.23 | Handle Cargo.toml workspace detection | ⬜ | dendrite-wou9 | Find crate roots in workspace |
-| 1.2.24 | Resolve mod paths to files | ⬜ | dendrite-otaf | `mod foo` -> foo.rs or foo/mod.rs |
+| 1.2.24 | Resolve mod paths to files | ✅ | dendrite-otaf | `mod foo` -> foo.rs or foo/mod.rs |
 
 ### Milestone 1.3: File Discovery
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 1.3.1 | Implement `discover_files()` using walkdir | ⬜ | dendrite-for | Find all .zig files recursively |
-| 1.3.2 | Add .gitignore support via `ignore` crate | ⬜ | dendrite-nzb | Respect existing ignore patterns |
-| 1.3.3 | Add configurable exclude patterns | ⬜ | dendrite-b5k | Skip test/, build/, zig-cache/ |
-| 1.3.4 | Write tests for file discovery | ⬜ | dendrite-zmh | Nested dirs, ignored files, symlinks |
-| 1.3.5 | Handle file read errors gracefully | ⬜ | dendrite-u21 | Log warning, continue processing |
+| 1.3.1 | Implement `discover_files()` using walkdir | ✅ | dendrite-for | Find all .zig files recursively |
+| 1.3.2 | Add .gitignore support via `ignore` crate | ✅ | dendrite-nzb | Respect existing ignore patterns |
+| 1.3.3 | Add configurable exclude patterns | ✅ | dendrite-b5k | Skip test/, build/, zig-cache/ |
+| 1.3.4 | Write tests for file discovery | ✅ | dendrite-zmh | Nested dirs, ignored files, symlinks |
+| 1.3.5 | Handle file read errors gracefully | ✅ | dendrite-u21 | Log warning, continue processing |
 | 1.3.6 | Implement parallel file parsing | ⬜ | dendrite-6j5 | Use rayon for multi-core speedup |
 
 ### Milestone 1.4: Graph Construction
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 1.4.1 | Define `FileNode` struct | ⬜ | dendrite-fhu | path, relative_path, layer, summary, exports, loc |
-| 1.4.2 | Define `Layer` enum | ⬜ | dendrite-y21 | Entry, App, Core, Platform, Driver, Arch, Unknown |
-| 1.4.3 | Define `Import` edge struct | ⬜ | dendrite-hr1 | from, to, line number |
-| 1.4.4 | Create type alias `DepGraph = DiGraph<FileNode, Import>` | ⬜ | dendrite-2n5 | petgraph directed graph |
-| 1.4.5 | Implement `GraphBuilder::new()` | ⬜ | dendrite-mqx | Initialize empty graph |
-| 1.4.6 | Implement `GraphBuilder::add_file()` | ⬜ | dendrite-s4c | Add node, return NodeIndex |
-| 1.4.7 | Implement import path resolution | ⬜ | dendrite-57f | Resolve relative paths, handle @import("foo.zig") |
-| 1.4.8 | Implement `GraphBuilder::add_edges()` | ⬜ | dendrite-wf7 | Connect imports to target nodes |
-| 1.4.9 | Handle missing import targets | ⬜ | dendrite-ajk | Log warning for unresolved imports |
-| 1.4.10 | Handle std library imports | ⬜ | dendrite-col | Option to include/exclude std |
-| 1.4.11 | Implement `GraphBuilder::build()` | ⬜ | dendrite-28s | Finalize and return DepGraph |
-| 1.4.12 | Write tests for graph construction | ⬜ | dendrite-lnu | Linear chain, diamond, disconnected |
+| 1.4.1 | Define `FileNode` struct | ✅ | dendrite-fhu | path, relative_path, layer, summary, exports, loc |
+| 1.4.2 | Define `Layer` enum | ✅ | dendrite-y21 | Entry, App, Core, Platform, Driver, Arch, Unknown |
+| 1.4.3 | Define `Import` edge struct | ✅ | dendrite-hr1 | from, to, line number |
+| 1.4.4 | Create type alias `DepGraph = DiGraph<FileNode, Import>` | ✅ | dendrite-2n5 | petgraph directed graph |
+| 1.4.5 | Implement `GraphBuilder::new()` | ✅ | dendrite-mqx | Initialize empty graph |
+| 1.4.6 | Implement `GraphBuilder::add_file()` | ✅ | dendrite-s4c | Add node, return NodeIndex |
+| 1.4.7 | Implement import path resolution | ✅ | dendrite-57f | Resolve relative paths, handle @import("foo.zig") |
+| 1.4.8 | Implement `GraphBuilder::add_edges()` | ✅ | dendrite-wf7 | Connect imports to target nodes |
+| 1.4.9 | Handle missing import targets | ✅ | dendrite-ajk | Log warning for unresolved imports |
+| 1.4.10 | Handle std library imports | ✅ | dendrite-col | Option to include/exclude std |
+| 1.4.11 | Implement `GraphBuilder::build()` | ✅ | dendrite-28s | Finalize and return DepGraph |
+| 1.4.12 | Write tests for graph construction | ✅ | dendrite-lnu | Linear chain, diamond, disconnected |
 
 ### Milestone 1.5: Basic JSON Output
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 1.5.1 | Define `CodebaseMap` serializable struct | ⬜ | dendrite-q2c | nodes: Vec<FileNode>, edges: Vec<Import>, metadata |
-| 1.5.2 | Implement `DepGraph::to_codemap()` | ⬜ | dendrite-jew | Convert petgraph to serializable format |
-| 1.5.3 | Implement JSON serialization | ⬜ | dendrite-1on | serde_json::to_string_pretty |
-| 1.5.4 | Write JSON to file | ⬜ | dendrite-pzv | codebase_map.json |
-| 1.5.5 | Write test: serialize and deserialize | ⬜ | dendrite-mdo | Round-trip test |
+| 1.5.1 | Define `CodebaseMap` serializable struct | ✅ | dendrite-q2c | nodes: Vec<FileNode>, edges: Vec<Import>, metadata |
+| 1.5.2 | Implement `DepGraph::to_codemap()` | ✅ | dendrite-jew | Convert petgraph to serializable format |
+| 1.5.3 | Implement JSON serialization | ✅ | dendrite-1on | serde_json::to_string_pretty |
+| 1.5.4 | Write JSON to file | ✅ | dendrite-pzv | codebase_map.json |
+| 1.5.5 | Write test: serialize and deserialize | ✅ | dendrite-mdo | Round-trip test |
 
 ### Milestone 1.6: CLI Integration
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 1.6.1 | Wire up `--path` argument | ⬜ | dendrite-454 | Default to current directory |
-| 1.6.2 | Wire up `--json` flag | ⬜ | dendrite-dr8 | Output JSON only |
-| 1.6.3 | Wire up `--output` directory option | ⬜ | dendrite-flm | Default to .dendrite/ |
-| 1.6.4 | Add `--quiet` flag | ⬜ | dendrite-ama | Suppress stdout, only write files |
-| 1.6.5 | Add `--verbose` flag | ⬜ | dendrite-vzu | Debug logging with RUST_LOG |
-| 1.6.6 | Print summary stats to stdout | ⬜ | dendrite-7lu | File count, edge count, time elapsed |
-| 1.6.7 | End-to-end test: CLI with test fixtures | ⬜ | dendrite-lv3 | Verify JSON output matches expected |
+| 1.6.1 | Wire up `--path` argument | ✅ | dendrite-454 | Default to current directory |
+| 1.6.2 | Wire up `--json` flag | ✅ | dendrite-dr8 | Output JSON only |
+| 1.6.3 | Wire up `--output` directory option | ✅ | dendrite-flm | Default to .dendrite/ |
+| 1.6.4 | Add `--quiet` flag | ✅ | dendrite-ama | Suppress stdout, only write files |
+| 1.6.5 | Add `--verbose` flag | ✅ | dendrite-vzu | Debug logging with RUST_LOG |
+| 1.6.6 | Print summary stats to stdout | ✅ | dendrite-7lu | File count, edge count, time elapsed |
+| 1.6.7 | End-to-end test: CLI with test fixtures | ✅ | dendrite-lv3 | Verify JSON output matches expected |
 
 **Phase 1 Exit Criteria:**
 - `dendrite --path ./test_fixtures --json` produces valid codebase_map.json
@@ -133,86 +133,86 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 2.1.1 | Implement `find_cycles()` using Kosaraju's algorithm | ⬜ | dendrite-jqd | petgraph::algo::kosaraju_scc |
-| 2.1.2 | Filter SCCs to only multi-node components | ⬜ | dendrite-2e8 | Single nodes aren't cycles |
-| 2.1.3 | Extract cycle paths (not just nodes) | ⬜ | dendrite-td0 | Show A → B → C → A |
-| 2.1.4 | Find specific edges that form cycles | ⬜ | dendrite-3v8 | For targeted fix suggestions |
-| 2.1.5 | Write tests: no cycles case | ⬜ | dendrite-mh8 | DAG should return empty |
-| 2.1.6 | Write tests: simple cycle (A ↔ B) | ⬜ | dendrite-dk4 | Two-node mutual import |
-| 2.1.7 | Write tests: complex cycle (A → B → C → A) | ⬜ | dendrite-etb | Three+ node cycle |
-| 2.1.8 | Write tests: multiple independent cycles | ⬜ | dendrite-02p | Return all cycles |
-| 2.1.9 | Add cycle info to analysis result | ⬜ | dendrite-pkp | cycles: Vec<Cycle> |
+| 2.1.1 | Implement `find_cycles()` using Kosaraju's algorithm | ✅ | dendrite-jqd | petgraph::algo::kosaraju_scc |
+| 2.1.2 | Filter SCCs to only multi-node components | ✅ | dendrite-2e8 | Single nodes aren't cycles |
+| 2.1.3 | Extract cycle paths (not just nodes) | ✅ | dendrite-td0 | Show A -> B -> C -> A |
+| 2.1.4 | Find specific edges that form cycles | ✅ | dendrite-3v8 | For targeted fix suggestions |
+| 2.1.5 | Write tests: no cycles case | ✅ | dendrite-mh8 | DAG should return empty |
+| 2.1.6 | Write tests: simple cycle (A <-> B) | ✅ | dendrite-dk4 | Two-node mutual import |
+| 2.1.7 | Write tests: complex cycle (A -> B -> C -> A) | ✅ | dendrite-etb | Three+ node cycle |
+| 2.1.8 | Write tests: multiple independent cycles | ✅ | dendrite-02p | Return all cycles |
+| 2.1.9 | Add cycle info to analysis result | ✅ | dendrite-pkp | cycles: Vec<Cycle> |
 
 ### Milestone 2.2: Depth Metrics
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 2.2.1 | Identify entry points (zero in-degree) | ⬜ | dendrite-zy4 | Files nothing imports |
-| 2.2.2 | Implement BFS depth calculation from entries | ⬜ | dendrite-txd | Longest path to each node |
-| 2.2.3 | Handle cycles in depth calculation | ⬜ | dendrite-b0k | Mark cycle nodes specially |
-| 2.2.4 | Find maximum depth across all nodes | ⬜ | dendrite-jxe | max_depth metric |
-| 2.2.5 | Find deepest path (entry → leaf) | ⬜ | dendrite-dxs | deepest_path: Vec<String> |
-| 2.2.6 | Calculate depth for each node | ⬜ | dendrite-020 | Store in FileNode or separate map |
-| 2.2.7 | Write tests for depth calculation | ⬜ | dendrite-0bp | Linear, branching, with cycles |
+| 2.2.1 | Identify entry points (zero in-degree) | ✅ | dendrite-zy4 | Files nothing imports |
+| 2.2.2 | Implement BFS depth calculation from entries | ✅ | dendrite-txd | Longest path to each node |
+| 2.2.3 | Handle cycles in depth calculation | ✅ | dendrite-b0k | Mark cycle nodes specially |
+| 2.2.4 | Find maximum depth across all nodes | ✅ | dendrite-jxe | max_depth metric |
+| 2.2.5 | Find deepest path (entry -> leaf) | ✅ | dendrite-dxs | deepest_path: Vec<String> |
+| 2.2.6 | Calculate depth for each node | ✅ | dendrite-020 | Store in FileNode or separate map |
+| 2.2.7 | Write tests for depth calculation | ✅ | dendrite-0bp | Linear, branching, with cycles |
 
 ### Milestone 2.3: Fan-In/Fan-Out Metrics
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 2.3.1 | Implement `fan_out()` for each node | ⬜ | dendrite-cmh | Count outgoing edges (imports) |
-| 2.3.2 | Implement `fan_in()` for each node | ⬜ | dendrite-1uw | Count incoming edges (imported by) |
-| 2.3.3 | Find high fan-out files | ⬜ | dendrite-f91 | Sorted list above threshold |
-| 2.3.4 | Find high fan-in files | ⬜ | dendrite-gwe | Core dependencies list |
-| 2.3.5 | Identify orphan files | ⬜ | dendrite-tjn | Zero fan-in AND zero fan-out |
-| 2.3.6 | Add metrics to analysis result | ⬜ | dendrite-gcm | high_fan_out, high_fan_in, orphans |
-| 2.3.7 | Write tests for fan metrics | ⬜ | dendrite-bof | Various graph shapes |
+| 2.3.1 | Implement `fan_out()` for each node | ✅ | dendrite-cmh | Count outgoing edges (imports) |
+| 2.3.2 | Implement `fan_in()` for each node | ✅ | dendrite-1uw | Count incoming edges (imported by) |
+| 2.3.3 | Find high fan-out files | ✅ | dendrite-f91 | Sorted list above threshold |
+| 2.3.4 | Find high fan-in files | ✅ | dendrite-gwe | Core dependencies list |
+| 2.3.5 | Identify orphan files | ✅ | dendrite-tjn | Zero fan-in AND zero fan-out |
+| 2.3.6 | Add metrics to analysis result | ✅ | dendrite-gcm | high_fan_out, high_fan_in, orphans |
+| 2.3.7 | Write tests for fan metrics | ✅ | dendrite-bof | Various graph shapes |
 
 ### Milestone 2.4: Layer Classification
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 2.4.1 | Define default layer patterns | ⬜ | dendrite-k86 | main.zig → Entry, drivers/* → Driver, etc. |
-| 2.4.2 | Implement glob pattern matching for layers | ⬜ | dendrite-wik | Use `glob` crate or simple impl |
-| 2.4.3 | Classify files based on path patterns | ⬜ | dendrite-76u | Assign Layer enum to each FileNode |
-| 2.4.4 | Handle Unknown layer for unmatched files | ⬜ | dendrite-aiq | Default fallback |
-| 2.4.5 | Allow config override for layer assignment | ⬜ | dendrite-nfq | Explicit file → layer mapping |
-| 2.4.6 | Write tests for layer classification | ⬜ | dendrite-aha | Pattern matching edge cases |
+| 2.4.1 | Define default layer patterns | ✅ | dendrite-k86 | main.zig -> Entry, drivers/* -> Driver, etc. |
+| 2.4.2 | Implement glob pattern matching for layers | ✅ | dendrite-wik | Use `glob` crate or simple impl |
+| 2.4.3 | Classify files based on path patterns | ✅ | dendrite-76u | Assign Layer enum to each FileNode |
+| 2.4.4 | Handle Unknown layer for unmatched files | ✅ | dendrite-aiq | Default fallback |
+| 2.4.5 | Allow config override for layer assignment | ⬜ | dendrite-nfq | Explicit file -> layer mapping |
+| 2.4.6 | Write tests for layer classification | ✅ | dendrite-aha | Pattern matching edge cases |
 
 ### Milestone 2.5: Layer Rule Enforcement
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 2.5.1 | Define `LayerViolation` struct | ⬜ | dendrite-kyt | file, imports, layer_from, layer_to, reason |
-| 2.5.2 | Implement default layer rules | ⬜ | dendrite-rgl | Deeper layers can't import shallower |
-| 2.5.3 | Check all edges against layer rules | ⬜ | dendrite-aqe | Iterate edges, compare layers |
-| 2.5.4 | Generate violation messages | ⬜ | dendrite-dvn | Human-readable explanations |
+| 2.5.1 | Define `LayerViolation` struct | ✅ | dendrite-kyt | file, imports, layer_from, layer_to, reason |
+| 2.5.2 | Implement default layer rules | ✅ | dendrite-rgl | Deeper layers can't import shallower |
+| 2.5.3 | Check all edges against layer rules | ✅ | dendrite-aqe | Iterate edges, compare layers |
+| 2.5.4 | Generate violation messages | ✅ | dendrite-dvn | Human-readable explanations |
 | 2.5.5 | Support custom allow rules | ⬜ | dendrite-4o1 | "driver -> arch" exceptions |
 | 2.5.6 | Support custom deny rules | ⬜ | dendrite-9x9 | Additional restrictions |
-| 2.5.7 | Write tests for layer violations | ⬜ | dendrite-ep5 | Valid hierarchy, violations, custom rules |
+| 2.5.7 | Write tests for layer violations | ✅ | dendrite-ep5 | Valid hierarchy, violations, custom rules |
 
 ### Milestone 2.6: Analysis Result Aggregation
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 2.6.1 | Define `AnalysisResult` struct | ⬜ | dendrite-9nb | Combine all metrics and findings |
-| 2.6.2 | Implement `DepGraph::analyze()` | ⬜ | dendrite-ojh | Run all analyses, return result |
-| 2.6.3 | Add severity levels to findings | ⬜ | dendrite-kbo | Error (cycles), Warning (high fan-out), Info |
-| 2.6.4 | Generate fix suggestions for cycles | ⬜ | dendrite-2ck | "Extract shared types to common.zig" |
-| 2.6.5 | Generate fix suggestions for violations | ⬜ | dendrite-sly | "Move X to platform layer or remove import" |
-| 2.6.6 | Implement `AnalysisResult::has_errors()` | ⬜ | dendrite-0fj | For CI exit code |
-| 2.6.7 | Implement `AnalysisResult::to_json()` | ⬜ | dendrite-gz2 | Serializable format |
-| 2.6.8 | Write integration test: full analysis | ⬜ | dendrite-yww | Complex fixture with issues |
+| 2.6.1 | Define `AnalysisResult` struct | ✅ | dendrite-9nb | Combine all metrics and findings |
+| 2.6.2 | Implement `DepGraph::analyze()` | ✅ | dendrite-ojh | Run all analyses, return result |
+| 2.6.3 | Add severity levels to findings | ✅ | dendrite-kbo | Error (cycles), Warning (high fan-out), Info |
+| 2.6.4 | Generate fix suggestions for cycles | ✅ | dendrite-2ck | "Extract shared types to common.zig" |
+| 2.6.5 | Generate fix suggestions for violations | ✅ | dendrite-sly | "Move X to platform layer or remove import" |
+| 2.6.6 | Implement `AnalysisResult::has_errors()` | ✅ | dendrite-0fj | For CI exit code |
+| 2.6.7 | Implement `AnalysisResult::to_json()` | ✅ | dendrite-gz2 | Serializable format |
+| 2.6.8 | Write integration test: full analysis | ✅ | dendrite-yww | Complex fixture with issues |
 
 ### Milestone 2.7: CI Mode
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 2.7.1 | Add `--check` flag to CLI | ⬜ | dendrite-5xr | Exit 1 on cycles |
-| 2.7.2 | Add `--strict` flag | ⬜ | dendrite-ldr | Also exit 1 on violations |
-| 2.7.3 | Print actionable error messages | ⬜ | dendrite-aye | File:line format for editor integration |
-| 2.7.4 | Support `--check --json` combo | ⬜ | dendrite-avx | Machine-readable CI output |
-| 2.7.5 | Write test: CI pass case | ⬜ | dendrite-xu2 | Clean codebase exits 0 |
-| 2.7.6 | Write test: CI fail case | ⬜ | dendrite-2gp | Cycle present exits 1 |
+| 2.7.1 | Add `--check` flag to CLI | ✅ | dendrite-5xr | Exit 1 on cycles |
+| 2.7.2 | Add `--strict` flag | ✅ | dendrite-ldr | Also exit 1 on violations |
+| 2.7.3 | Print actionable error messages | ✅ | dendrite-aye | File:line format for editor integration |
+| 2.7.4 | Support `--check --json` combo | ✅ | dendrite-avx | Machine-readable CI output |
+| 2.7.5 | Write test: CI pass case | ✅ | dendrite-xu2 | Clean codebase exits 0 |
+| 2.7.6 | Write test: CI fail case | ✅ | dendrite-2gp | Cycle present exits 1 |
 
 **Phase 2 Exit Criteria:**
 - `dendrite --check` correctly detects cycles and violations
@@ -229,55 +229,55 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 3.1.1 | Create handlebars template for CODEBASE.md | ⬜ | dendrite-0z2 | templates/CODEBASE.md.hbs |
-| 3.1.2 | Implement template data struct | ⬜ | dendrite-lw4 | All fields needed for template |
-| 3.1.3 | Add overview section generation | ⬜ | dendrite-6rv | File count, depth, layers, alerts |
-| 3.1.4 | Add Mermaid diagram generation | ⬜ | dendrite-p67 | flowchart LR with layer styling |
+| 3.1.1 | Create handlebars template for CODEBASE.md | ✅ | dendrite-0z2 | templates/CODEBASE.md.hbs |
+| 3.1.2 | Implement template data struct | ✅ | dendrite-lw4 | All fields needed for template |
+| 3.1.3 | Add overview section generation | ✅ | dendrite-6rv | File count, depth, layers, alerts |
+| 3.1.4 | Add Mermaid diagram generation | ✅ | dendrite-p67 | flowchart LR with layer styling |
 | 3.1.5 | Limit Mermaid to top N important nodes | ⬜ | dendrite-k5g | Avoid huge unreadable diagrams |
-| 3.1.6 | Add file index table generation | ⬜ | dendrite-88q | Sortable columns in markdown |
-| 3.1.7 | Add alerts section with details | ⬜ | dendrite-auq | Cycles with line numbers, violations |
-| 3.1.8 | Add layer definitions section | ⬜ | dendrite-6dt | Document the architecture |
-| 3.1.9 | Render template to string | ⬜ | dendrite-iz7 | handlebars.render() |
-| 3.1.10 | Write CODEBASE.md to output dir | ⬜ | dendrite-h6o | .dendrite/CODEBASE.md |
-| 3.1.11 | Write test: markdown generation | ⬜ | dendrite-6gm | Verify structure and content |
+| 3.1.6 | Add file index table generation | ✅ | dendrite-88q | Sortable columns in markdown |
+| 3.1.7 | Add alerts section with details | ✅ | dendrite-auq | Cycles with line numbers, violations |
+| 3.1.8 | Add layer definitions section | ✅ | dendrite-6dt | Document the architecture |
+| 3.1.9 | Render template to string | ✅ | dendrite-iz7 | handlebars.render() |
+| 3.1.10 | Write CODEBASE.md to output dir | ✅ | dendrite-h6o | .dendrite/CODEBASE.md |
+| 3.1.11 | Write test: markdown generation | ✅ | dendrite-6gm | Verify structure and content |
 
 ### Milestone 3.2: File Summaries
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 3.2.1 | Create template for file summary | ⬜ | dendrite-9xe | templates/file_summary.md.hbs |
-| 3.2.2 | Include file metadata in summary | ⬜ | dendrite-51h | Path, layer, depth, loc |
-| 3.2.3 | Include doc comment if present | ⬜ | dendrite-13n | Module-level documentation |
-| 3.2.4 | Include imports list with line numbers | ⬜ | dendrite-97z | What this file depends on |
-| 3.2.5 | Include dependents list | ⬜ | dendrite-llm | What depends on this file |
-| 3.2.6 | Include public exports list | ⬜ | dendrite-1jp | API surface |
-| 3.2.7 | Mirror directory structure in summaries/ | ⬜ | dendrite-6h4 | summaries/kernel/scheduler.zig.md |
-| 3.2.8 | Generate all file summaries | ⬜ | dendrite-k19 | Iterate nodes, write files |
-| 3.2.9 | Add `--summaries` flag to CLI | ⬜ | dendrite-y3x | Generate only if requested |
-| 3.2.10 | Write test: file summary content | ⬜ | dendrite-6f5 | Verify all sections present |
+| 3.2.1 | Create template for file summary | ✅ | dendrite-9xe | templates/file_summary.md.hbs |
+| 3.2.2 | Include file metadata in summary | ✅ | dendrite-51h | Path, layer, depth, loc |
+| 3.2.3 | Include doc comment if present | ✅ | dendrite-13n | Module-level documentation |
+| 3.2.4 | Include imports list with line numbers | ✅ | dendrite-97z | What this file depends on |
+| 3.2.5 | Include dependents list | ✅ | dendrite-llm | What depends on this file |
+| 3.2.6 | Include public exports list | ✅ | dendrite-1jp | API surface |
+| 3.2.7 | Mirror directory structure in summaries/ | ✅ | dendrite-6h4 | summaries/kernel/scheduler.zig.md |
+| 3.2.8 | Generate all file summaries | ✅ | dendrite-k19 | Iterate nodes, write files |
+| 3.2.9 | Add `--summaries` flag to CLI | ✅ | dendrite-y3x | Generate only if requested |
+| 3.2.10 | Write test: file summary content | ✅ | dendrite-6f5 | Verify all sections present |
 
 ### Milestone 3.3: Metrics JSON
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 3.3.1 | Define `Metrics` struct | ⬜ | dendrite-3o8 | Numerical analysis data |
-| 3.3.2 | Include file count by layer | ⬜ | dendrite-rw6 | layer_counts: HashMap<Layer, usize> |
-| 3.3.3 | Include depth histogram | ⬜ | dendrite-qbg | How many files at each depth |
-| 3.3.4 | Include fan-in/fan-out distributions | ⬜ | dendrite-d1f | Average, median, max |
-| 3.3.5 | Include cycle count and sizes | ⬜ | dendrite-wo6 | Quick health check |
-| 3.3.6 | Include timestamp | ⬜ | dendrite-831 | When analysis was run |
-| 3.3.7 | Write metrics.json to output | ⬜ | dendrite-lra | .dendrite/metrics.json |
+| 3.3.1 | Define `Metrics` struct | ✅ | dendrite-3o8 | Numerical analysis data |
+| 3.3.2 | Include file count by layer | ✅ | dendrite-rw6 | layer_counts: HashMap<Layer, usize> |
+| 3.3.3 | Include depth histogram | ✅ | dendrite-qbg | How many files at each depth |
+| 3.3.4 | Include fan-in/fan-out distributions | ✅ | dendrite-d1f | Average, median, max |
+| 3.3.5 | Include cycle count and sizes | ✅ | dendrite-wo6 | Quick health check |
+| 3.3.6 | Include timestamp | ✅ | dendrite-831 | When analysis was run |
+| 3.3.7 | Write metrics.json to output | ✅ | dendrite-lra | .dendrite/metrics.json |
 
 ### Milestone 3.4: Output Orchestration
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 3.4.1 | Create output directory if missing | ⬜ | dendrite-cu8 | mkdir -p .dendrite |
-| 3.4.2 | Implement `--all` flag | ⬜ | dendrite-zup | JSON + markdown + summaries |
-| 3.4.3 | Implement `--markdown` flag | ⬜ | dendrite-zsa | CODEBASE.md only |
-| 3.4.4 | Add `--clean` flag | ⬜ | dendrite-f2y | Remove old output before generating |
-| 3.4.5 | Print output file paths to stdout | ⬜ | dendrite-oe1 | Confirm what was written |
-| 3.4.6 | End-to-end test: all outputs | ⬜ | dendrite-5r9 | Verify all files created |
+| 3.4.1 | Create output directory if missing | ✅ | dendrite-cu8 | mkdir -p .dendrite |
+| 3.4.2 | Implement `--all` flag | ✅ | dendrite-zup | JSON + markdown + summaries |
+| 3.4.3 | Implement `--markdown` flag | ✅ | dendrite-zsa | CODEBASE.md only |
+| 3.4.4 | Add `--clean` flag | ✅ | dendrite-f2y | Remove old output before generating |
+| 3.4.5 | Print output file paths to stdout | ✅ | dendrite-oe1 | Confirm what was written |
+| 3.4.6 | End-to-end test: all outputs | ✅ | dendrite-5r9 | Verify all files created |
 
 **Phase 3 Exit Criteria:**
 - `dendrite --all` generates complete .dendrite/ directory

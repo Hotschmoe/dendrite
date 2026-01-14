@@ -199,6 +199,7 @@ impl GraphBuilder {
     /// - Relative imports: @import("../foo.zig"), @import("./bar.zig")
     /// - Same-directory imports: @import("foo.zig")
     /// - Absolute imports from project root: @import("kernel/memory.zig")
+    /// - Rust module patterns: foo.rs OR foo/mod.rs
     ///
     /// Returns None for standard library imports or unresolvable paths.
     fn resolve_import(&self, source_path: &Path, import_target: &str) -> Option<PathBuf> {
@@ -209,21 +210,24 @@ impl GraphBuilder {
 
         // Try relative to source file's directory
         if let Some(source_dir) = source_path.parent() {
-            let candidate = source_dir.join(import_target);
-
-            // First check if this path is already in our graph (for testing)
-            if self.path_to_node.contains_key(&candidate) {
-                return Some(candidate);
-            }
-
-            // Then check if it exists on disk (for real usage)
-            if candidate.exists() {
-                return candidate.canonicalize().ok();
+            if let Some(resolved) = self.try_resolve_path(source_dir, import_target) {
+                return Some(resolved);
             }
         }
 
         // Try relative to project root
-        let candidate = self.project_root.join(import_target);
+        if let Some(resolved) = self.try_resolve_path(&self.project_root, import_target) {
+            return Some(resolved);
+        }
+
+        None
+    }
+
+    /// Try to resolve a path relative to a base directory.
+    ///
+    /// For Rust modules (foo.rs), also tries foo/mod.rs pattern.
+    fn try_resolve_path(&self, base_dir: &Path, import_target: &str) -> Option<PathBuf> {
+        let candidate = base_dir.join(import_target);
 
         // First check if this path is already in our graph (for testing)
         if self.path_to_node.contains_key(&candidate) {
@@ -233,6 +237,22 @@ impl GraphBuilder {
         // Then check if it exists on disk (for real usage)
         if candidate.exists() {
             return candidate.canonicalize().ok();
+        }
+
+        // For Rust modules: if foo.rs doesn't exist, try foo/mod.rs
+        if import_target.ends_with(".rs") {
+            let mod_name = import_target.strip_suffix(".rs").unwrap();
+            let alt_candidate = base_dir.join(mod_name).join("mod.rs");
+
+            // Check graph first (for testing)
+            if self.path_to_node.contains_key(&alt_candidate) {
+                return Some(alt_candidate);
+            }
+
+            // Then check disk
+            if alt_candidate.exists() {
+                return alt_candidate.canonicalize().ok();
+            }
         }
 
         None
@@ -638,5 +658,50 @@ mod tests {
 
         // std is not in the graph, so it will be unresolved
         assert_eq!(builder.unresolved_imports().len(), 1);
+    }
+
+    #[test]
+    fn test_graph_builder_rust_mod_resolution() {
+        // Test that mod foo; resolves to foo/mod.rs when foo.rs doesn't exist
+        let mut builder = GraphBuilder::new(PathBuf::from("/project/src"), false);
+
+        // lib.rs declares `mod parser;`
+        let node_lib = FileNode {
+            path: PathBuf::from("/project/src/lib.rs"),
+            relative_path: "src/lib.rs".to_string(),
+            layer: Layer::Unknown,
+            depth: 0,
+            summary: None,
+            exports: vec![],
+            loc: 10,
+        };
+
+        // parser/mod.rs is the actual module file
+        let node_parser = FileNode {
+            path: PathBuf::from("/project/src/parser/mod.rs"),
+            relative_path: "src/parser/mod.rs".to_string(),
+            layer: Layer::Unknown,
+            depth: 0,
+            summary: None,
+            exports: vec![],
+            loc: 50,
+        };
+
+        builder.add_file(node_lib);
+        builder.add_file(node_parser);
+
+        // lib.rs imports parser.rs (which should resolve to parser/mod.rs)
+        let mut import_map = HashMap::new();
+        import_map.insert(
+            PathBuf::from("/project/src/lib.rs"),
+            vec![("parser.rs".to_string(), 1)],
+        );
+
+        builder.add_edges(&import_map);
+        let graph = builder.build();
+
+        // Should have 2 nodes and 1 edge (lib.rs -> parser/mod.rs)
+        assert_eq!(graph.node_count(), 2);
+        assert_eq!(graph.edge_count(), 1);
     }
 }

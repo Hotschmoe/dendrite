@@ -69,11 +69,6 @@ struct Cli {
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    if cli.tui {
-        eprintln!("TUI mode not yet implemented (Phase 5)");
-        std::process::exit(1);
-    }
-
     run(cli)
 }
 
@@ -94,6 +89,9 @@ fn run(cli: Cli) -> Result<()> {
     }
 
     let project_root = cli.path.canonicalize()?;
+
+    // Early return for TUI mode - we need to build the graph first
+    let tui_mode = cli.tui;
 
     if !cli.quiet {
         println!("Dendrite - Codebase Dependency Analysis");
@@ -260,6 +258,13 @@ fn run(cli: Cli) -> Result<()> {
 
     // 4. Run analysis (needed for markdown and CI mode)
     let analysis = analyze(&graph, 5); // threshold for high fan-in/out
+
+    // If TUI mode, launch interactive interface
+    if tui_mode {
+        let app = dendrite::tui::App::new(graph, analysis);
+        dendrite::tui::run(app)?;
+        return Ok(());
+    }
 
     // 5. Generate outputs
     let wants_json = cli.json || cli.all;

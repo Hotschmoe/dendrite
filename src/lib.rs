@@ -11,6 +11,7 @@ pub mod graph;
 pub mod output;
 pub mod config;
 pub mod discovery;
+pub mod tui;
 
 // Re-export main types for convenience
 pub use graph::{DepGraph, FileNode, Layer};
