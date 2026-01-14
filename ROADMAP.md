@@ -30,7 +30,11 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 | 1.1.6 | Create test fixtures directory | ⬜ | dendrite-4le | test_fixtures/ with sample Zig project |
 | 1.1.7 | Set up basic integration test harness | ⬜ | dendrite-gqx | tests/integration.rs |
 
-### Milestone 1.2: Zig Parser
+### Milestone 1.2: Language Parsers (Zig & Rust)
+
+> **Note:** Rust support from day one lets us use dendrite to visualize its own codebase!
+
+#### Zig Parser
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
@@ -45,6 +49,24 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 | 1.2.9 | Create `ZigFile` struct combining all extractions | ⬜ | dendrite-6ga | path, imports, doc_comment, exports, loc |
 | 1.2.10 | Implement `parse_file()` orchestrating function | ⬜ | dendrite-9ip | Read file, run all extractors |
 | 1.2.11 | Write integration test: parse real Zig file | ⬜ | dendrite-0xb | Use test_fixtures/simple.zig |
+
+#### Rust Parser
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 1.2.12 | Define `RustImport` struct | ⬜ | dendrite-60tz | path: String, line: usize, kind: Use/Mod/Extern |
+| 1.2.13 | Implement `extract_use_statements()` with regex | ⬜ | dendrite-5wwe | Match `use crate::`, `use super::`, `use std::` |
+| 1.2.14 | Implement `extract_mod_declarations()` | ⬜ | dendrite-y48t | Match `mod foo;` and `mod foo { }` |
+| 1.2.15 | Handle nested use statements | ⬜ | dendrite-4m5p | `use foo::{bar, baz::*}` expansion |
+| 1.2.16 | Write unit tests for Rust imports | ⬜ | dendrite-6rla | use, mod, extern crate patterns |
+| 1.2.17 | Implement `extract_rust_doc_comment()` | ⬜ | dendrite-spdw | Parse `//!` and `///` doc comments |
+| 1.2.18 | Implement `extract_pub_items()` | ⬜ | dendrite-cchq | Find `pub fn`, `pub struct`, `pub enum`, `pub trait` |
+| 1.2.19 | Handle visibility modifiers | ⬜ | dendrite-6ffr | `pub(crate)`, `pub(super)`, `pub(in path)` |
+| 1.2.20 | Create `RustFile` struct | ⬜ | dendrite-xvhb | path, imports, mods, doc_comment, exports, loc |
+| 1.2.21 | Implement Rust `parse_file()` function | ⬜ | dendrite-8j9b | Read file, run all extractors |
+| 1.2.22 | Write integration test: parse dendrite's own src/ | ⬜ | dendrite-1ffu | Dogfooding! |
+| 1.2.23 | Handle Cargo.toml workspace detection | ⬜ | dendrite-wou9 | Find crate roots in workspace |
+| 1.2.24 | Resolve mod paths to files | ⬜ | dendrite-otaf | `mod foo` -> foo.rs or foo/mod.rs |
 
 ### Milestone 1.3: File Discovery
 
@@ -441,14 +463,15 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 6.2.1 | Define `Parser` trait | ⬜ | dendrite-y6sj | parse_file() → ParseResult |
+| 6.2.1 | Define `Parser` trait | ⬜ | dendrite-y6sj | parse_file() -> ParseResult |
 | 6.2.2 | Define `ParseResult` struct | ⬜ | dendrite-wfvq | imports, exports, doc, loc |
 | 6.2.3 | Implement trait for ZigParser | ⬜ | dendrite-fmti | Wrap existing code |
-| 6.2.4 | Implement trait for AsmParser | ⬜ | dendrite-aezu | Wrap assembly parser |
-| 6.2.5 | Create parser registry | ⬜ | dendrite-x799 | Extension → Parser mapping |
-| 6.2.6 | Auto-select parser by file extension | ⬜ | dendrite-nj8o | .zig, .s, .S, .c, etc. |
+| 6.2.4 | Implement trait for RustParser | ⬜ | dendrite-rfbt | Wrap Rust parser from Phase 1 |
+| 6.2.5 | Implement trait for AsmParser | ⬜ | dendrite-aezu | Wrap assembly parser |
+| 6.2.6 | Create parser registry | ⬜ | dendrite-x799 | Extension -> Parser mapping |
+| 6.2.7 | Auto-select parser by file extension | ⬜ | dendrite-nj8o | .zig, .rs, .s, .S, .c, etc. |
 
-### Milestone 6.3: C Parser (Stretch)
+### Milestone 6.3: C/C++ Parser (Stretch)
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
@@ -457,10 +480,53 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 | 6.3.3 | Parse function declarations | 💡 | dendrite-dq7p | Exports from headers |
 | 6.3.4 | Handle include guards | 💡 | dendrite-vfbe | Don't double-count |
 | 6.3.5 | Write tests for C parsing | 💡 | dendrite-bj68 | Headers and sources |
+| 6.3.6 | Add C++ namespace support | 💡 | dendrite-gmmy | Parse `namespace`, `class`, `#include <header>` |
+| 6.3.7 | Handle C++ templates in declarations | 💡 | dendrite-vuf8 | Basic template detection |
+
+### Milestone 6.4: Go Parser (Stretch)
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 6.4.1 | Create `parser/go.rs` module | 💡 | dendrite-n5ur | Go import syntax |
+| 6.4.2 | Parse `import "path"` statements | 💡 | dendrite-d4fy | Single and grouped imports |
+| 6.4.3 | Parse `import ( ... )` blocks | 💡 | dendrite-qt0k | Multi-line import groups |
+| 6.4.4 | Handle import aliases | 💡 | dendrite-084x | `import alias "path"` |
+| 6.4.5 | Extract exported identifiers | 💡 | dendrite-dmzm | Capitalized = public |
+| 6.4.6 | Parse package declarations | 💡 | dendrite-5oef | `package main`, `package foo` |
+| 6.4.7 | Handle go.mod for module roots | 💡 | dendrite-to0u | Workspace detection |
+| 6.4.8 | Write tests for Go parsing | 💡 | dendrite-f465 | Standard library, local packages |
+
+### Milestone 6.5: Python Parser (Stretch)
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 6.5.1 | Create `parser/python.rs` module | 💡 | dendrite-jh96 | Python import syntax |
+| 6.5.2 | Parse `import module` statements | 💡 | dendrite-lnqm | Absolute imports |
+| 6.5.3 | Parse `from module import name` | 💡 | dendrite-efnj | Selective imports |
+| 6.5.4 | Parse `from . import relative` | 💡 | dendrite-km1f | Relative imports |
+| 6.5.5 | Handle `__init__.py` package detection | 💡 | dendrite-cecr | Package vs module |
+| 6.5.6 | Extract `__all__` exports | 💡 | dendrite-mihg | Public API definition |
+| 6.5.7 | Parse class and function definitions | 💡 | dendrite-5yrv | `def`, `class`, `async def` |
+| 6.5.8 | Write tests for Python parsing | 💡 | dendrite-2yyy | Packages, modules, relative |
+
+### Milestone 6.6: JavaScript/TypeScript Parser (Stretch)
+
+| ID | Task | Status | Bead | Notes |
+|----|------|--------|------|-------|
+| 6.6.1 | Create `parser/js.rs` module | 💡 | dendrite-fb53 | JS/TS import syntax |
+| 6.6.2 | Parse ES6 `import` statements | 💡 | dendrite-is67 | `import { x } from 'y'` |
+| 6.6.3 | Parse CommonJS `require()` | 💡 | dendrite-epbt | `const x = require('y')` |
+| 6.6.4 | Parse `export` declarations | 💡 | dendrite-xsv3 | Named and default exports |
+| 6.6.5 | Handle TypeScript `import type` | 💡 | dendrite-dc73 | Type-only imports |
+| 6.6.6 | Parse `export * from` re-exports | 💡 | dendrite-bxq9 | Barrel files |
+| 6.6.7 | Handle package.json for roots | 💡 | dendrite-kxhh | Workspace detection |
+| 6.6.8 | Resolve node_modules paths | 💡 | dendrite-ikk5 | External vs local deps |
+| 6.6.9 | Write tests for JS/TS parsing | 💡 | dendrite-xk07 | ESM, CJS, TypeScript |
 
 **Phase 6 Exit Criteria:**
 - Assembly files included in dependency graph
 - Parser system extensible for new languages
+- (Stretch) Support for Go, Python, JS/TS codebases
 
 ---
 
@@ -758,17 +824,17 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | Phase | Tasks | Stretch |
 |-------|-------|---------|
-| 1. Foundation | 45 | 0 |
+| 1. Foundation | 58 | 0 |
 | 2. Analysis | 41 | 0 |
 | 3. Markdown | 22 | 0 |
 | 4. Configuration | 17 | 0 |
 | 5. TUI | 47 | 0 |
-| 6. Parsers | 15 | 5 |
+| 6. Parsers | 16 | 32 |
 | 7. Advanced | 17 | 3 |
 | 8. Distribution | 16 | 5 |
 | 9. GPU GUI | 89 | 0 |
 | 10. Stretch | 0 | 21 |
-| **Total** | **309** | **34** |
+| **Total** | **323** | **61** |
 
 ---
 
