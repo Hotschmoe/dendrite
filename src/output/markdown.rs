@@ -216,15 +216,16 @@ fn build_alerts(analysis: &AnalysisResult) -> Vec<Alert> {
             .map(|(from, to, line)| format!("{}:{} imports {}", from, line, to))
             .collect();
 
-        let fix = if !cycle.edges.is_empty() {
-            let (from, to, line) = &cycle.edges[0];
-            format!(
-                "Break cycle by removing import at {}:{} (imports {})",
-                from, line, to
-            )
-        } else {
-            "Extract shared types to a common module".to_string()
-        };
+        let fix = cycle
+            .edges
+            .first()
+            .map(|(from, to, line)| {
+                format!(
+                    "Break cycle by removing import at {}:{} (imports {})",
+                    from, line, to
+                )
+            })
+            .unwrap_or_else(|| "Extract shared types to a common module".to_string());
 
         alerts.push(Alert {
             severity: "error".to_string(),
