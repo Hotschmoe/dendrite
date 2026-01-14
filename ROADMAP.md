@@ -408,7 +408,7 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 | 5.6.3 | Implement Enter to select/expand | ✅ | dendrite-3ni7 | Context-dependent action |
 | 5.6.4 | Implement 'd' for dependents mode | ✅ | dendrite-37mg | Highlight what imports this (bound to 'w') |
 | 5.6.5 | Implement 'i' for imports mode | ✅ | dendrite-euna | Highlight what this imports |
-| 5.6.6 | Implement 'p' for path trace | ⬜ | dendrite-mok0 | Show path to entry point |
+| 5.6.6 | Implement 'p' for path trace | ✅ | dendrite-mok0 | Show path to entry point |
 | 5.6.7 | Implement 'c' to jump to next cycle | ✅ | dendrite-rgsi | Quick cycle navigation |
 | 5.6.8 | Implement 'l' to toggle layer colors | ✅ | dendrite-lmmf | On/off for accessibility |
 | 5.6.9 | Implement '/' for search | ✅ | dendrite-peht | Filter files by name |
@@ -432,7 +432,7 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 | 5.8.2 | Add error display for parse failures | ⬜ | dendrite-9tuj | Show in status bar |
 | 5.8.3 | Test on small terminals (80x24) | ⬜ | dendrite-8u34 | Ensure usable minimum |
 | 5.8.4 | Test on large terminals | ⬜ | dendrite-sqbr | Use space well |
-| 5.8.5 | Add mouse support (optional) | ⬜ | dendrite-9gwk | Click to select nodes |
+| 5.8.5 | Add mouse support (optional) | ✅ | dendrite-9gwk | Click to switch panels, scroll |
 | 5.8.6 | Profile and optimize rendering | ⬜ | dendrite-fxwd | 60fps target |
 
 **Phase 5 Exit Criteria:**

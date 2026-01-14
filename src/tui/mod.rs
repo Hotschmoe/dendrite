@@ -70,13 +70,32 @@ pub fn run(mut app: App) -> io::Result<()> {
 
     let mut terminal = setup_terminal()?;
 
+    // Track layout areas for mouse event handling
+    let mut layout_cache: Option<LayoutCache> = None;
+
     loop {
-        terminal.draw(|f| ui::render(f, &app))?;
+        terminal.draw(|f| {
+            // Cache layout areas for mouse handling
+            layout_cache = Some(capture_layout(f, &app));
+            ui::render(f, &app);
+        })?;
 
         if event::poll(std::time::Duration::from_millis(100))? {
             match event::read()? {
                 Event::Key(key) => {
                     events::handle_key_event(&mut app, key);
+                }
+                Event::Mouse(mouse) => {
+                    if let Some(ref cache) = layout_cache {
+                        events::handle_mouse_event(
+                            &mut app,
+                            mouse,
+                            cache.tab_bar,
+                            cache.graph_area,
+                            cache.details_area,
+                            cache.alerts_area,
+                        );
+                    }
                 }
                 Event::Resize(_, _) => {
                     // Terminal was resized, next draw will handle it
@@ -91,4 +110,66 @@ pub fn run(mut app: App) -> io::Result<()> {
     }
 
     restore_terminal(terminal)
+}
+
+/// Cache of layout areas for mouse event handling.
+struct LayoutCache {
+    tab_bar: ratatui::layout::Rect,
+    graph_area: Option<ratatui::layout::Rect>,
+    details_area: Option<ratatui::layout::Rect>,
+    alerts_area: Option<ratatui::layout::Rect>,
+}
+
+/// Capture layout areas from the frame for mouse event handling.
+fn capture_layout(f: &ratatui::Frame, app: &App) -> LayoutCache {
+    use ratatui::layout::{Constraint, Layout};
+
+    let size = f.area();
+
+    // Replicate the layout logic from ui::render
+    let main_chunks = if app.mode == app::ViewMode::Search {
+        Layout::vertical([
+            Constraint::Length(1), // Tab bar
+            Constraint::Min(3),    // Main content area
+            Constraint::Length(1), // Status bar
+            Constraint::Length(1), // Search bar
+        ])
+        .split(size)
+    } else {
+        Layout::vertical([
+            Constraint::Length(1), // Tab bar
+            Constraint::Min(3),    // Main content area
+            Constraint::Length(1), // Status bar
+        ])
+        .split(size)
+    };
+
+    let tab_bar = main_chunks[0];
+    let content_area = main_chunks[1];
+
+    // Determine which panels are visible
+    let (graph_area, details_area, alerts_area) = if app.panel == app::ActivePanel::Graph && size.width >= 80 {
+        // Show both graph and details panels side-by-side
+        let content_chunks = Layout::horizontal([
+            Constraint::Percentage(70), // Graph panel
+            Constraint::Length(35),     // Details panel
+        ])
+        .split(content_area);
+
+        (Some(content_chunks[0]), Some(content_chunks[1]), None)
+    } else {
+        // Show single active panel in full width
+        match app.panel {
+            app::ActivePanel::Graph => (Some(content_area), None, None),
+            app::ActivePanel::Details => (None, Some(content_area), None),
+            app::ActivePanel::Alerts => (None, None, Some(content_area)),
+        }
+    };
+
+    LayoutCache {
+        tab_bar,
+        graph_area,
+        details_area,
+        alerts_area,
+    }
 }

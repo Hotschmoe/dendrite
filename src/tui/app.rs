@@ -19,6 +19,8 @@ pub enum ViewMode {
     Dependents,
     /// Search/filter mode
     Search,
+    /// Path trace mode - show path to entry point
+    PathTrace,
 }
 
 /// Active panel in the TUI.
@@ -65,6 +67,8 @@ pub struct App {
     pub search_results: Vec<NodeIndex>,
     /// Current position in cycle navigation
     pub cycle_index: usize,
+    /// Path trace - nodes from selected to entry point
+    pub traced_path: Vec<NodeIndex>,
 }
 
 impl App {
@@ -92,6 +96,7 @@ impl App {
             search_query: String::new(),
             search_results: Vec::new(),
             cycle_index: 0,
+            traced_path: Vec::new(),
         }
     }
 
@@ -376,5 +381,108 @@ impl App {
             self.panel = ActivePanel::Details;
             self.details_scroll = 0;
         }
+    }
+
+    /// Trace path from selected node to nearest entry point.
+    pub fn trace_path_to_entry(&mut self) {
+        if let Some(selected) = self.selected_node {
+            // Find all entry points (depth 0 nodes)
+            let entry_points: Vec<NodeIndex> = self
+                .graph
+                .node_indices()
+                .filter(|&idx| self.graph[idx].depth == 0)
+                .collect();
+
+            if entry_points.is_empty() {
+                // No entry points, clear path and return to normal mode
+                self.traced_path.clear();
+                self.mode = ViewMode::Normal;
+                return;
+            }
+
+            // Use BFS to find shortest path from selected to any entry point
+            // We need to traverse backwards (incoming edges) since dependencies point outward
+            use petgraph::algo::dijkstra;
+            use petgraph::Direction;
+            use std::collections::HashMap;
+
+            // Find shortest path to any entry point
+            let mut shortest_path: Option<Vec<NodeIndex>> = None;
+            let mut shortest_len = usize::MAX;
+
+            for &entry in &entry_points {
+                // Run Dijkstra from entry point in reverse direction
+                let distances = dijkstra(&self.graph, entry, None, |_| 1);
+
+                if let Some(&dist) = distances.get(&selected) {
+                    if dist < shortest_len {
+                        // Reconstruct path from selected to entry
+                        let path = self.reconstruct_path(selected, entry, Direction::Incoming);
+                        if let Some(p) = path {
+                            shortest_len = dist;
+                            shortest_path = Some(p);
+                        }
+                    }
+                }
+            }
+
+            if let Some(path) = shortest_path {
+                self.traced_path = path;
+                self.mode = ViewMode::PathTrace;
+            } else {
+                // No path found (node is isolated or orphan)
+                self.traced_path.clear();
+                self.mode = ViewMode::Normal;
+            }
+        }
+    }
+
+    /// Reconstruct path between two nodes using BFS.
+    fn reconstruct_path(
+        &self,
+        from: NodeIndex,
+        to: NodeIndex,
+        direction: petgraph::Direction,
+    ) -> Option<Vec<NodeIndex>> {
+        use petgraph::visit::Bfs;
+        use std::collections::HashMap;
+
+        let mut bfs = Bfs::new(&self.graph, to);
+        let mut parent: HashMap<NodeIndex, NodeIndex> = HashMap::new();
+
+        // BFS from 'to' node towards 'from' node
+        while let Some(node) = bfs.next(&self.graph) {
+            if node == from {
+                // Found the target, reconstruct path
+                let mut path = vec![from];
+                let mut current = from;
+
+                while current != to {
+                    if let Some(&next) = parent.get(&current) {
+                        path.push(next);
+                        current = next;
+                    } else {
+                        return None;
+                    }
+                }
+
+                return Some(path);
+            }
+
+            // Explore neighbors in the given direction
+            for neighbor in self.graph.neighbors_directed(node, direction) {
+                if !parent.contains_key(&neighbor) && neighbor != to {
+                    parent.insert(neighbor, node);
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Exit path trace mode.
+    pub fn exit_path_trace(&mut self) {
+        self.traced_path.clear();
+        self.mode = ViewMode::Normal;
     }
 }

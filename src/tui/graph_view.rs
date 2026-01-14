@@ -79,6 +79,10 @@ impl<'a> GraphView<'a> {
                     false
                 }
             }
+            ViewMode::PathTrace => {
+                // Only highlight nodes in the traced path
+                self.app.traced_path.contains(&node_idx)
+            }
         }
     }
 

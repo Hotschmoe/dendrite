@@ -524,6 +524,13 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
             "Mode: SEARCH".to_string(),
             Style::default().fg(Color::Yellow).bold(),
         ),
+        ViewMode::PathTrace => (
+            format!(
+                "Mode: PATH TRACE ({} steps)",
+                app.traced_path.len().saturating_sub(1)
+            ),
+            Style::default().fg(Color::Green).bold(),
+        ),
     };
 
     // Right: help hint
@@ -606,6 +613,7 @@ fn render_help_overlay(f: &mut Frame, _app: &App, area: Rect) {
         Line::from(Span::styled("View Modes:", Style::default().bold())),
         Line::from("  i                 Toggle Imports mode (highlight what file imports)"),
         Line::from("  w                 Toggle Dependents mode (who imports this file)"),
+        Line::from("  p                 Toggle Path trace mode (path to entry point)"),
         Line::from("  /                 Enter search mode"),
         Line::from("  Esc               Exit view mode / Return to normal"),
         Line::from(""),
@@ -615,6 +623,10 @@ fn render_help_overlay(f: &mut Frame, _app: &App, area: Rect) {
         Line::from(Span::styled("Display:", Style::default().bold())),
         Line::from("  l                 Toggle layer colors"),
         Line::from("  ?                 Toggle this help"),
+        Line::from(""),
+        Line::from(Span::styled("Mouse Support:", Style::default().bold())),
+        Line::from("  Click             Switch panels or focus clicked area"),
+        Line::from("  Scroll wheel      Scroll details/alerts panels"),
         Line::from(""),
         Line::from(Span::styled("Quit:", Style::default().bold())),
         Line::from("  q / Esc           Quit application"),

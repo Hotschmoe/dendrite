@@ -1,9 +1,10 @@
 //! Event handling for the TUI.
 //!
-//! Processes keyboard input and updates application state accordingly.
+//! Processes keyboard and mouse input and updates application state accordingly.
 
 use super::app::{ActivePanel, App};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+use ratatui::layout::Rect;
 
 /// Handle a keyboard event and update the app state.
 pub fn handle_key_event(app: &mut App, key: KeyEvent) {
@@ -137,6 +138,13 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) {
         KeyCode::Char('w') | KeyCode::Char('W') => {
             app.enter_dependents_mode();
         }
+        KeyCode::Char('p') | KeyCode::Char('P') => {
+            if app.mode == ViewMode::PathTrace {
+                app.exit_path_trace();
+            } else {
+                app.trace_path_to_entry();
+            }
+        }
 
         // Search mode
         KeyCode::Char('/') => {
@@ -156,5 +164,83 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) {
         _ => {
             // Unhandled keys are ignored
         }
+    }
+}
+
+/// Handle a mouse event and update the app state.
+/// Requires layout information to determine which UI element was clicked.
+pub fn handle_mouse_event(
+    app: &mut App,
+    mouse: MouseEvent,
+    tab_bar_area: Rect,
+    graph_area: Option<Rect>,
+    details_area: Option<Rect>,
+    alerts_area: Option<Rect>,
+) {
+    match mouse.kind {
+        MouseEventKind::Down(MouseButton::Left) => {
+            let (col, row) = (mouse.column, mouse.row);
+
+            // Check if click was on tab bar
+            if tab_bar_area.contains(ratatui::layout::Position { x: col, y: row }) {
+                handle_tab_bar_click(app, col, tab_bar_area);
+                return;
+            }
+
+            // Check if click was on graph panel
+            if let Some(area) = graph_area {
+                if area.contains(ratatui::layout::Position { x: col, y: row }) {
+                    app.panel = ActivePanel::Graph;
+                    return;
+                }
+            }
+
+            // Check if click was on details panel
+            if let Some(area) = details_area {
+                if area.contains(ratatui::layout::Position { x: col, y: row }) {
+                    app.panel = ActivePanel::Details;
+                    return;
+                }
+            }
+
+            // Check if click was on alerts panel
+            if let Some(area) = alerts_area {
+                if area.contains(ratatui::layout::Position { x: col, y: row }) {
+                    app.panel = ActivePanel::Alerts;
+                }
+            }
+        }
+        MouseEventKind::ScrollUp => {
+            // Scroll up in the current panel
+            match app.panel {
+                ActivePanel::Details => app.scroll_details_up(),
+                ActivePanel::Alerts => app.prev_alert(),
+                _ => {}
+            }
+        }
+        MouseEventKind::ScrollDown => {
+            // Scroll down in the current panel
+            match app.panel {
+                ActivePanel::Details => app.scroll_details_down(),
+                ActivePanel::Alerts => app.next_alert(),
+                _ => {}
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Handle a click on the tab bar to switch panels.
+fn handle_tab_bar_click(app: &mut App, col: u16, tab_bar_area: Rect) {
+    // Tab bar format: "[G]raph | [D]etails | [A]lerts"
+    // Approximate positions: Graph (0-8), Details (10-20), Alerts (22-30)
+    let relative_col = col.saturating_sub(tab_bar_area.x);
+
+    if relative_col < 8 {
+        app.panel = ActivePanel::Graph;
+    } else if (10..20).contains(&relative_col) {
+        app.panel = ActivePanel::Details;
+    } else if (22..30).contains(&relative_col) {
+        app.panel = ActivePanel::Alerts;
     }
 }
