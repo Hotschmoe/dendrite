@@ -26,6 +26,13 @@ struct NodeVertexOutput {
     @location(3) flags: u32,
 }
 
+struct EdgeVertexOutput {
+    @builtin(position) position: vec4<f32>,
+    @location(0) local_pos: vec2<f32>,
+    @location(1) color: vec4<f32>,
+    @location(2) flags: u32,
+}
+
 // Full-screen triangle for background grid
 @vertex
 fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
@@ -139,6 +146,71 @@ fn fs_node(in: NodeVertexOutput) -> @location(0) vec4<f32> {
             color = mix(color, border_color, border_alpha);
         }
     }
+
+    return vec4<f32>(color.rgb, color.a * alpha);
+}
+
+// Edge rendering with line expansion to quads
+@vertex
+fn vs_edge(
+    @builtin(vertex_index) vertex_index: u32,
+    @location(0) start: vec2<f32>,
+    @location(1) end: vec2<f32>,
+    @location(2) color: vec4<f32>,
+    @location(3) width: f32,
+    @location(4) flags: u32,
+) -> EdgeVertexOutput {
+    var out: EdgeVertexOutput;
+
+    // Compute direction and perpendicular
+    let dir = normalize(end - start);
+    let perp = vec2<f32>(-dir.y, dir.x);
+
+    // Generate quad corners (4 vertices per instance)
+    // 0: start + perp, 1: start - perp, 2: end + perp, 3: end - perp
+    let corner = vertex_index % 4u;
+    let is_end = corner >= 2u;
+    let is_right = (corner % 2u) == 0u;
+
+    let along = select(start, end, is_end);
+    let offset = perp * width * 0.5 * select(-1.0, 1.0, is_right);
+    let world_pos = along + offset;
+
+    // Apply pan and zoom
+    let pan = vec2<f32>(uniforms.pan_x, uniforms.pan_y);
+    let view_pos = (world_pos - pan) * uniforms.zoom;
+
+    // Convert to NDC
+    let ndc_x = view_pos.x / uniforms.aspect;
+    let ndc_y = view_pos.y;
+
+    out.position = vec4<f32>(ndc_x, ndc_y, 0.0, 1.0);
+
+    // Local position for anti-aliasing (-1 to 1 across width)
+    out.local_pos = vec2<f32>(select(-1.0, 1.0, is_right), select(0.0, 1.0, is_end));
+    out.color = color;
+    out.flags = flags;
+
+    return out;
+}
+
+// Edge fragment shader with anti-aliasing
+@fragment
+fn fs_edge(in: EdgeVertexOutput) -> @location(0) vec4<f32> {
+    let in_cycle = (in.flags & 0x1u) != 0u;
+
+    var color = in.color;
+
+    // Apply cycle pulsing effect
+    if (in_cycle) {
+        let pulse = (sin(uniforms.time * 3.0) * 0.5 + 0.5) * 0.4;
+        color = vec4<f32>(color.rgb * (1.0 + pulse), color.a);
+    }
+
+    // Anti-aliased edges using distance from center line
+    let edge_dist = abs(in.local_pos.x);
+    let edge_smoothness = 0.1;
+    let alpha = 1.0 - smoothstep(1.0 - edge_smoothness, 1.0, edge_dist);
 
     return vec4<f32>(color.rgb, color.a * alpha);
 }

@@ -4,10 +4,11 @@ use iced::widget::shader::{self, Action, Primitive};
 use iced::{wgpu, Event, Point, Rectangle};
 
 use super::pipeline::GraphPipeline;
-use super::types::NodeInstance;
+use super::types::{EdgeInstance, NodeInstance, EDGE_COLOR};
 
 pub struct GraphShader {
     pub instances: Vec<NodeInstance>,
+    pub edges: Vec<EdgeInstance>,
 }
 
 impl Default for GraphShader {
@@ -24,7 +25,17 @@ impl Default for GraphShader {
             NodeInstance::new([0.0, -0.5], [0.2, 0.08], layer_color(Layer::Arch)),
         ];
 
-        Self { instances }
+        // Create test edges connecting nodes
+        let edges = vec![
+            EdgeInstance::new([0.0, 0.0], [-0.3, 0.3], EDGE_COLOR, 0.005),
+            EdgeInstance::new([0.0, 0.0], [0.3, 0.3], EDGE_COLOR, 0.005),
+            EdgeInstance::new([-0.3, 0.3], [-0.3, -0.3], EDGE_COLOR, 0.005),
+            EdgeInstance::new([0.3, 0.3], [0.3, -0.3], EDGE_COLOR, 0.005),
+            EdgeInstance::new([-0.3, -0.3], [0.0, -0.5], EDGE_COLOR, 0.005),
+            EdgeInstance::new([0.3, -0.3], [0.0, -0.5], EDGE_COLOR, 0.005),
+        ];
+
+        Self { instances, edges }
     }
 }
 
@@ -56,6 +67,7 @@ pub struct GraphPrimitive {
     pub time: f32,
     pub bounds: Rectangle,
     pub instances: Vec<NodeInstance>,
+    pub edges: Vec<EdgeInstance>,
 }
 
 impl Primitive for GraphPrimitive {
@@ -71,6 +83,7 @@ impl Primitive for GraphPrimitive {
     ) {
         pipeline.update_uniforms(queue, self.zoom, self.pan, self.time, &self.bounds);
         pipeline.update_instances(device, queue, &self.instances);
+        pipeline.update_edge_instances(device, queue, &self.edges);
     }
 
     fn draw(
@@ -78,7 +91,11 @@ impl Primitive for GraphPrimitive {
         pipeline: &Self::Pipeline,
         render_pass: &mut wgpu::RenderPass<'_>,
     ) -> bool {
-        pipeline.draw(render_pass, self.instances.len() as u32);
+        pipeline.draw(
+            render_pass,
+            self.instances.len() as u32,
+            self.edges.len() as u32,
+        );
         true
     }
 }
@@ -99,6 +116,7 @@ impl shader::Program<Message> for GraphShader {
             time: state.time,
             bounds,
             instances: self.instances.clone(),
+            edges: self.edges.clone(),
         }
     }
 

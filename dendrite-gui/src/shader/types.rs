@@ -51,6 +51,41 @@ impl NodeInstance {
     }
 }
 
+/// Instance data for rendering a single edge (dependency arrow).
+/// Matches the EdgeInstance struct in graph.wgsl.
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct EdgeInstance {
+    pub start: [f32; 2],
+    pub end: [f32; 2],
+    pub color: [f32; 4],
+    pub width: f32,
+    pub flags: u32,
+    pub _padding: [u32; 2],
+}
+
+impl EdgeInstance {
+    pub fn new(start: [f32; 2], end: [f32; 2], color: [f32; 4], width: f32) -> Self {
+        Self {
+            start,
+            end,
+            color,
+            width,
+            flags: 0,
+            _padding: [0; 2],
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn set_in_cycle(&mut self, in_cycle: bool) {
+        if in_cycle {
+            self.flags |= 0x1;
+        } else {
+            self.flags &= !0x1;
+        }
+    }
+}
+
 /// Get the color for a given layer.
 pub fn layer_color(layer: Layer) -> [f32; 4] {
     match layer {
@@ -63,3 +98,10 @@ pub fn layer_color(layer: Layer) -> [f32; 4] {
         Layer::Unknown => [0.5, 0.5, 0.5, 1.0],
     }
 }
+
+/// Default edge color (light gray with transparency).
+pub const EDGE_COLOR: [f32; 4] = [0.6, 0.6, 0.6, 0.5];
+
+/// Cycle edge color (red with stronger opacity).
+#[allow(dead_code)]
+pub const CYCLE_EDGE_COLOR: [f32; 4] = [0.9, 0.2, 0.2, 0.8];

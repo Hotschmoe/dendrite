@@ -669,17 +669,17 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 9.4.1 | Research edge rendering approaches | ⬜ | dendrite-jf4a | Lines vs quads vs geometry |
-| 9.4.2 | Design edge instance data structure | ⬜ | dendrite-i6eh | start, end, color, width, is_cycle |
-| 9.4.3 | Implement line rendering with quads | ⬜ | dendrite-ypej | Expand line to screen-space quad |
-| 9.4.4 | Write vertex shader for line quads | ⬜ | dendrite-brn2 | Perpendicular expansion |
-| 9.4.5 | Write fragment shader for anti-aliased lines | ⬜ | dendrite-oa22 | SDF edge smoothing |
-| 9.4.6 | Add arrow heads at target end | ⬜ | dendrite-zebi | Triangle geometry or SDF |
-| 9.4.7 | Implement curved edges (quadratic Bezier) | ⬜ | dendrite-flob | For overlapping edge clarity |
-| 9.4.8 | Tessellate Bezier to line segments | ⬜ | dendrite-bgho | Adaptive based on zoom |
-| 9.4.9 | Add cycle edge highlighting (red, animated) | ⬜ | dendrite-7pr0 | Dashed or glowing |
-| 9.4.10 | Implement edge hover detection | ⬜ | dendrite-3911 | Distance to curve on CPU |
-| 9.4.11 | Render edges behind nodes (depth/order) | ⬜ | dendrite-r6hf | Separate render pass or depth buffer |
+| 9.4.1 | Research edge rendering approaches | ✅ | dendrite-jf4a | Quads with instancing |
+| 9.4.2 | Design edge instance data structure | ✅ | dendrite-i6eh | start, end, color, width, flags |
+| 9.4.3 | Implement line rendering with quads | ✅ | dendrite-ypej | TriangleStrip for efficiency |
+| 9.4.4 | Write vertex shader for line quads | ✅ | dendrite-brn2 | Perpendicular expansion |
+| 9.4.5 | Write fragment shader for anti-aliased lines | ✅ | dendrite-oa22 | Smoothstep anti-aliasing |
+| 9.4.6 | Add arrow heads at target end | 💡 | dendrite-zebi | Future: triangle geometry |
+| 9.4.7 | Implement curved edges (quadratic Bezier) | 💡 | dendrite-flob | Future: for overlapping edges |
+| 9.4.8 | Tessellate Bezier to line segments | 💡 | dendrite-bgho | Future: adaptive tessellation |
+| 9.4.9 | Add cycle edge highlighting (red, animated) | ✅ | dendrite-7pr0 | Sin wave pulsing |
+| 9.4.10 | Implement edge hover detection | 💡 | dendrite-3911 | Future: distance to line |
+| 9.4.11 | Render edges behind nodes (depth/order) | ✅ | dendrite-r6hf | Edges rendered first |
 
 ### Milestone 9.5: Text Rendering (SDF)
 

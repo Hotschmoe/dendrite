@@ -3,7 +3,7 @@ use iced::wgpu;
 use iced::wgpu::util::DeviceExt;
 use iced::Rectangle;
 
-use super::types::NodeInstance;
+use super::types::{EdgeInstance, NodeInstance};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -27,6 +27,7 @@ const QUAD_INDICES: &[u16] = &[0, 1, 2, 0, 2, 3];
 
 pub struct GraphPipeline {
     grid_pipeline: wgpu::RenderPipeline,
+    edge_pipeline: wgpu::RenderPipeline,
     node_pipeline: wgpu::RenderPipeline,
     uniform_buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
@@ -34,6 +35,8 @@ pub struct GraphPipeline {
     index_buffer: wgpu::Buffer,
     instance_buffer: wgpu::Buffer,
     instance_capacity: usize,
+    edge_instance_buffer: wgpu::Buffer,
+    edge_instance_capacity: usize,
 }
 
 impl Pipeline for GraphPipeline {
@@ -228,8 +231,90 @@ impl Pipeline for GraphPipeline {
             cache: None,
         });
 
+        // Edge instance buffer layout
+        let edge_instance_buffer_layout = wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<EdgeInstance>() as u64,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x2,
+                },
+                wgpu::VertexAttribute {
+                    offset: 8,
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float32x2,
+                },
+                wgpu::VertexAttribute {
+                    offset: 16,
+                    shader_location: 2,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: 32,
+                    shader_location: 3,
+                    format: wgpu::VertexFormat::Float32,
+                },
+                wgpu::VertexAttribute {
+                    offset: 36,
+                    shader_location: 4,
+                    format: wgpu::VertexFormat::Uint32,
+                },
+            ],
+        };
+
+        // Create edge pipeline
+        let edge_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Edge Pipeline"),
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs_edge"),
+                buffers: &[edge_instance_buffer_layout],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_edge"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview: None,
+            cache: None,
+        });
+
+        // Create edge instance buffer with initial capacity
+        let edge_instance_capacity = 2048;
+        let edge_instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Edge Instance Buffer"),
+            size: (std::mem::size_of::<EdgeInstance>() * edge_instance_capacity) as u64,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         Self {
             grid_pipeline,
+            edge_pipeline,
             node_pipeline,
             uniform_buffer,
             bind_group,
@@ -237,6 +322,8 @@ impl Pipeline for GraphPipeline {
             index_buffer,
             instance_buffer,
             instance_capacity,
+            edge_instance_buffer,
+            edge_instance_capacity,
         }
     }
 }
@@ -290,13 +377,51 @@ impl GraphPipeline {
         }
     }
 
-    pub fn draw(&self, render_pass: &mut wgpu::RenderPass<'_>, instance_count: u32) {
+    pub fn update_edge_instances(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        edge_instances: &[EdgeInstance],
+    ) {
+        if edge_instances.len() > self.edge_instance_capacity {
+            self.edge_instance_capacity = edge_instances.len().next_power_of_two();
+            self.edge_instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Edge Instance Buffer"),
+                size: (std::mem::size_of::<EdgeInstance>() * self.edge_instance_capacity) as u64,
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+        }
+
+        if !edge_instances.is_empty() {
+            queue.write_buffer(
+                &self.edge_instance_buffer,
+                0,
+                bytemuck::cast_slice(edge_instances),
+            );
+        }
+    }
+
+    pub fn draw(
+        &self,
+        render_pass: &mut wgpu::RenderPass<'_>,
+        instance_count: u32,
+        edge_count: u32,
+    ) {
         // Draw background grid
         render_pass.set_pipeline(&self.grid_pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
         render_pass.draw(0..3, 0..1);
 
-        // Draw nodes
+        // Draw edges first (behind nodes)
+        if edge_count > 0 {
+            render_pass.set_pipeline(&self.edge_pipeline);
+            render_pass.set_bind_group(0, &self.bind_group, &[]);
+            render_pass.set_vertex_buffer(0, self.edge_instance_buffer.slice(..));
+            render_pass.draw(0..4, 0..edge_count);
+        }
+
+        // Draw nodes on top
         if instance_count > 0 {
             render_pass.set_pipeline(&self.node_pipeline);
             render_pass.set_bind_group(0, &self.bind_group, &[]);
