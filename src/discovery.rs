@@ -69,7 +69,11 @@ impl DiscoveryConfig {
     fn should_exclude(&self, path: &Path) -> bool {
         path.components().any(|comp| {
             if let Some(name) = comp.as_os_str().to_str() {
-                self.exclude_patterns.iter().any(|pattern| name.contains(pattern))
+                self.exclude_patterns.iter().any(|pattern| {
+                    // Exact match for directory names to avoid excluding "test_fixtures"
+                    // when pattern is "test"
+                    name == pattern
+                })
             } else {
                 false
             }
