@@ -39,9 +39,26 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) {
             };
         }
 
-        // Navigation (arrows) - will be implemented in Phase 5.3
-        KeyCode::Up | KeyCode::Down | KeyCode::Left | KeyCode::Right => {
-            // Navigation will be implemented in milestone 5.3
+        // Navigation (arrows)
+        KeyCode::Up => {
+            if app.panel == ActivePanel::Graph {
+                app.select_prev_in_layer();
+            }
+        }
+        KeyCode::Down => {
+            if app.panel == ActivePanel::Graph {
+                app.select_next_in_layer();
+            }
+        }
+        KeyCode::Left => {
+            if app.panel == ActivePanel::Graph {
+                app.select_prev_layer();
+            }
+        }
+        KeyCode::Right => {
+            if app.panel == ActivePanel::Graph {
+                app.select_next_layer();
+            }
         }
 
         _ => {

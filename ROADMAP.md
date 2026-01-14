@@ -366,16 +366,16 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 5.3.1 | Implement hierarchical layout algorithm | ⬜ | dendrite-o44c | Assign x,y to each node |
-| 5.3.2 | Use Sugiyama-style layer assignment | ⬜ | dendrite-mtuw | Proper left-to-right layout |
-| 5.3.3 | Implement edge routing | ⬜ | dendrite-ibgg | Avoid overlapping lines |
-| 5.3.4 | Render nodes as boxes with filenames | ⬜ | dendrite-g33g | Unicode box drawing |
-| 5.3.5 | Render edges with arrows | ⬜ | dendrite-dc92 | ─, │, ┌, └, →, etc. |
-| 5.3.6 | Implement layer coloring | ⬜ | dendrite-sz8v | Different colors per layer |
-| 5.3.7 | Highlight selected node | ⬜ | dendrite-mgnc | Reverse video or bright |
-| 5.3.8 | Highlight cycles in red | ⬜ | dendrite-kjkt | Error color for cycle nodes |
-| 5.3.9 | Implement viewport scrolling | ⬜ | dendrite-g47p | Pan for large graphs |
-| 5.3.10 | Show truncated filenames for space | ⬜ | dendrite-mkxq | scheduler.zi… |
+| 5.3.1 | Implement hierarchical layout algorithm | ✅ | dendrite-o44c | layout.rs with GraphLayout::compute() |
+| 5.3.2 | Use Sugiyama-style layer assignment | ✅ | dendrite-mtuw | Nodes grouped by depth in columns |
+| 5.3.3 | Implement edge routing | ✅ | dendrite-ibgg | L-shaped routing, horizontal then vertical |
+| 5.3.4 | Render nodes as boxes with filenames | ✅ | dendrite-g33g | Unicode box drawing: ┌─┐ │ │ └─┘ |
+| 5.3.5 | Render edges with arrows | ✅ | dendrite-dc92 | ─, │, ┌, └, ▶ characters |
+| 5.3.6 | Implement layer coloring | ✅ | dendrite-sz8v | Layer-based border colors |
+| 5.3.7 | Highlight selected node | ✅ | dendrite-mgnc | Yellow bold with inverted text |
+| 5.3.8 | Highlight cycles in red | ✅ | dendrite-kjkt | Red nodes and edges for cycles |
+| 5.3.9 | Implement viewport scrolling | ✅ | dendrite-g47p | App.viewport_offset and scroll_viewport() |
+| 5.3.10 | Show truncated filenames for space | ✅ | dendrite-mkxq | truncate_filename() helper |
 
 ### Milestone 5.4: File Details Panel
 
@@ -403,8 +403,8 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 5.6.1 | Implement j/k and arrow key movement | ⬜ | dendrite-h1wx | Navigate nodes |
-| 5.6.2 | Implement Tab to switch panels | ⬜ | dendrite-j0w5 | Cycle through panels |
+| 5.6.1 | Implement j/k and arrow key movement | ✅ | dendrite-h1wx | Arrow keys: up/down for layer, left/right for depth |
+| 5.6.2 | Implement Tab to switch panels | ✅ | dendrite-j0w5 | Already implemented in 5.2 |
 | 5.6.3 | Implement Enter to select/expand | ⬜ | dendrite-3ni7 | Context-dependent action |
 | 5.6.4 | Implement 'd' for dependents mode | ⬜ | dendrite-37mg | Highlight what imports this |
 | 5.6.5 | Implement 'i' for imports mode | ⬜ | dendrite-euna | Highlight what this imports |

@@ -3,6 +3,7 @@
 //! Handles layout and drawing of the TUI interface using ratatui.
 
 use super::app::{ActivePanel, App, ViewMode};
+use super::graph_view::GraphView;
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
@@ -80,7 +81,7 @@ fn render_tab_bar(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(tabs, area);
 }
 
-/// Render the graph panel showing file list.
+/// Render the graph panel showing the visual dependency graph.
 fn render_graph_panel(f: &mut Frame, app: &App, area: Rect) {
     let title = format!(" Graph ({} files) ", app.graph.node_count());
 
@@ -93,36 +94,13 @@ fn render_graph_panel(f: &mut Frame, app: &App, area: Rect) {
             Style::default()
         });
 
-    // Collect all nodes and display as a list
-    let items: Vec<ListItem> = app
-        .graph
-        .node_indices()
-        .map(|idx| {
-            let node = &app.graph[idx];
-            let is_selected = app.selected_node == Some(idx);
-            let style = if is_selected {
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD)
-            } else {
-                Style::default()
-            };
+    // Render block first
+    let inner_area = block.inner(area);
+    f.render_widget(block, area);
 
-            let prefix = if is_selected { "> " } else { "  " };
-            let layer_tag = format!("[{}]", node.layer);
-
-            ListItem::new(Line::from(vec![
-                Span::raw(prefix),
-                Span::styled(layer_tag, Style::default().fg(layer_color(node.layer))),
-                Span::raw(" "),
-                Span::styled(&node.relative_path, style),
-            ]))
-        })
-        .collect();
-
-    let list = List::new(items).block(block);
-
-    f.render_widget(list, area);
+    // Render the graph view
+    let graph_view = GraphView::new(app, &app.layout);
+    f.render_widget(graph_view, inner_area);
 }
 
 /// Render the details panel showing selected file information.

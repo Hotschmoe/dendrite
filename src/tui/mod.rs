@@ -5,6 +5,8 @@
 
 mod app;
 mod events;
+mod graph_view;
+mod layout;
 mod ui;
 
 pub use app::{App, ViewMode, ActivePanel};
