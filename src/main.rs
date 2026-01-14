@@ -253,18 +253,19 @@ fn run(cli: Cli) -> Result<()> {
     }
 
     // 4. Generate output
+    let wants_json = cli.json || cli.all;
+    let wants_markdown = cli.markdown || cli.all;
+
     // Task 1.6.3: Create output directory if needed
-    if cli.json || cli.all {
-        if !cli.output.exists() {
-            if cli.verbose {
-                println!("Creating output directory: {}", cli.output.display());
-            }
-            fs::create_dir_all(&cli.output)?;
+    if wants_json && !cli.output.exists() {
+        if cli.verbose {
+            println!("Creating output directory: {}", cli.output.display());
         }
+        fs::create_dir_all(&cli.output)?;
     }
 
     // Task 1.6.2: Output JSON
-    if cli.json || cli.all {
+    if wants_json {
         let json_path = cli.output.join("graph.json");
         let codemap = CodebaseMap::from_graph(&graph, &project_root.to_string_lossy());
         codemap.write_to_file(&json_path)?;
@@ -275,10 +276,8 @@ fn run(cli: Cli) -> Result<()> {
     }
 
     // Markdown output (Phase 3 - not yet implemented)
-    if cli.markdown || cli.all {
-        if !cli.quiet {
-            eprintln!("Markdown output not yet implemented (Phase 3)");
-        }
+    if wants_markdown && !cli.quiet {
+        eprintln!("Markdown output not yet implemented (Phase 3)");
     }
 
     // Task 1.6.6: Print summary stats

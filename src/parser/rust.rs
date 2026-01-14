@@ -109,8 +109,6 @@ pub fn extract_use_statements(source: &str) -> Vec<RustImport> {
             if !item.is_empty() {
                 let full_path = if item == "*" {
                     format!("{}::*", base_path)
-                } else if item.contains("::") {
-                    format!("{}::{}", base_path, item)
                 } else {
                     format!("{}::{}", base_path, item)
                 };
@@ -255,7 +253,7 @@ pub fn extract_rust_doc_comment(source: &str) -> Option<String> {
         if in_block_doc {
             if let Some(end_pos) = trimmed.find("*/") {
                 block_content.push(' ');
-                block_content.push_str(&trimmed[..end_pos].trim());
+                block_content.push_str(trimmed[..end_pos].trim());
                 doc_lines.push(block_content.trim().to_string());
                 in_block_doc = false;
                 block_content.clear();
@@ -295,6 +293,7 @@ pub fn extract_rust_doc_comment(source: &str) -> Option<String> {
 /// - r"raw strings"
 /// - r#"raw strings with hashes"#
 /// - 'c' character literals
+#[allow(clippy::while_let_on_iterator)]
 fn remove_comments_and_strings(source: &str) -> String {
     let mut result = String::with_capacity(source.len());
     let mut chars = source.chars().peekable();
@@ -842,5 +841,3 @@ use std::io;
     // - test_empty_nested_use
     // - test_whitespace_in_nested_use
 }
-
-

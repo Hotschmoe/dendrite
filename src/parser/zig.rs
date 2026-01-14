@@ -251,200 +251,6 @@ fn remove_comments_only(source: &str) -> String {
 /// let decls = extract_public_decls(source);
 /// assert_eq!(decls, vec!["add", "MAX_SIZE", "counter"]);
 /// ```
-    // Tests for extract_public_decls
-    #[test]
-    fn test_extract_pub_fn() {
-        let source = r#"
-pub fn add(a: i32, b: i32) i32 {
-    return a + b;
-}
-        "#;
-        let decls = extract_public_decls(source);
-        assert_eq!(decls, vec!["add"]);
-    }
-
-    #[test]
-    fn test_extract_pub_const() {
-        let source = r#"
-pub const MAX_SIZE: usize = 1024;
-pub const VERSION: []const u8 = "1.0.0";
-        "#;
-        let decls = extract_public_decls(source);
-        assert_eq!(decls, vec!["MAX_SIZE", "VERSION"]);
-    }
-
-    #[test]
-    fn test_extract_pub_var() {
-        let source = r#"
-pub var counter: u32 = 0;
-pub var buffer: [256]u8 = undefined;
-        "#;
-        let decls = extract_public_decls(source);
-        assert_eq!(decls, vec!["counter", "buffer"]);
-    }
-
-    #[test]
-    fn test_private_declarations_not_captured() {
-        let source = r#"
-fn private_fn() void {}
-const PRIVATE_CONST: u32 = 42;
-var private_var: i32 = 10;
-pub fn public_fn() void {}
-        "#;
-        let decls = extract_public_decls(source);
-        assert_eq!(decls, vec!["public_fn"]);
-    }
-
-    #[test]
-    fn test_pub_in_line_comments_not_captured() {
-        let source = r#"
-// pub fn commented_out() void {}
-pub fn real_function() void {}
-// pub const COMMENTED_CONST: u32 = 42;
-        "#;
-        let decls = extract_public_decls(source);
-        assert_eq!(decls, vec!["real_function"]);
-    }
-
-    #[test]
-    fn test_pub_in_block_comments_not_captured() {
-        let source = r#"
-/*
-pub fn commented_out() void {}
-pub const COMMENTED_CONST: u32 = 42;
-*/
-pub fn real_function() void {}
-        "#;
-        let decls = extract_public_decls(source);
-        assert_eq!(decls, vec!["real_function"]);
-    }
-
-    #[test]
-    fn test_pub_in_strings_not_captured() {
-        let source = r#"
-const msg: []const u8 = "pub fn fake() void {}";
-pub fn real_function() void {}
-        "#;
-        let decls = extract_public_decls(source);
-        assert_eq!(decls, vec!["real_function"]);
-    }
-
-    #[test]
-    fn test_mixed_declarations() {
-        let source = r#"
-pub fn add(a: i32, b: i32) i32 { return a + b; }
-pub const MAX_SIZE: usize = 1024;
-pub var counter: u32 = 0;
-fn private_fn() void {}
-const PRIVATE_CONST: u32 = 42;
-        "#;
-        let decls = extract_public_decls(source);
-        assert_eq!(decls, vec!["add", "MAX_SIZE", "counter"]);
-    }
-
-    #[test]
-    fn test_various_formatting() {
-        let source = r#"
-pub fn func1() void {}
-pub  fn  func2() void {}
-    pub fn func3() void {}
-pub
-fn func4() void {}
-        "#;
-        let decls = extract_public_decls(source);
-        // func4 with newline after pub is matched because \s+ includes newlines
-        assert_eq!(decls, vec!["func1", "func2", "func3", "func4"]);
-    }
-
-    #[test]
-    fn test_nested_and_complex_declarations() {
-        let source = r#"
-pub const Config = struct {
-    pub fn init() Config {
-        return Config{};
-    }
-    pub const DEFAULT_SIZE: usize = 100;
-};
-
-pub fn outer() void {
-    const inner_fn = struct {
-        pub fn nested() void {}
-    };
-}
-        "#;
-        let decls = extract_public_decls(source);
-        // Should capture: Config, init, DEFAULT_SIZE, outer, nested
-        assert_eq!(decls, vec!["Config", "init", "DEFAULT_SIZE", "outer", "nested"]);
-    }
-
-    #[test]
-    fn test_identifiers_with_underscores() {
-        let source = r#"
-pub fn some_func() void {}
-pub const SOME_CONST: u32 = 42;
-pub var some_var: i32 = 10;
-pub fn _private_convention() void {}
-pub const __double_underscore: u32 = 1;
-        "#;
-        let decls = extract_public_decls(source);
-        assert_eq!(decls, vec!["some_func", "SOME_CONST", "some_var", "_private_convention", "__double_underscore"]);
-    }
-
-    #[test]
-    fn test_empty_source() {
-        let source = "";
-        let decls = extract_public_decls(source);
-        assert!(decls.is_empty());
-    }
-
-    #[test]
-    fn test_no_public_declarations() {
-        let source = r#"
-fn private1() void {}
-fn private2() void {}
-const CONST: u32 = 42;
-        "#;
-        let decls = extract_public_decls(source);
-        assert!(decls.is_empty());
-    }
-
-    #[test]
-    fn test_multiline_string_with_pub() {
-        let source = r#"
-const multiline =
-\\pub fn fake1() void {}
-\\pub const FAKE2: u32 = 42;
-;
-pub fn real_function() void {}
-        "#;
-        let decls = extract_public_decls(source);
-        // Multiline strings in Zig use \\ prefix per line
-        // Our string removal should handle this
-        assert_eq!(decls, vec!["real_function"]);
-    }
-
-    #[test]
-    fn test_escaped_quotes_in_strings() {
-        let source = r#"
-const msg: []const u8 = "She said \"pub fn fake() void {}\"";
-pub fn real_function() void {}
-        "#;
-        let decls = extract_public_decls(source);
-        assert_eq!(decls, vec!["real_function"]);
-    }
-
-    #[test]
-    fn test_doc_comments_with_pub() {
-        let source = r#"
-/// This is a doc comment about: pub fn fake() void {}
-pub fn real_function() void {}
-//! Another doc comment: pub const FAKE: u32 = 42;
-pub const REAL_CONST: u32 = 100;
-        "#;
-        let decls = extract_public_decls(source);
-        assert_eq!(decls, vec!["real_function", "REAL_CONST"]);
-    }
-
 pub fn extract_public_decls(source: &str) -> Vec<String> {
     // First, remove comments and string literals to avoid false matches
     let cleaned = remove_comments_and_strings(source);
@@ -940,5 +746,195 @@ const std = @import("std");"#;
 
         // Verify LOC is counted
         assert!(main_file.loc > 0);
+    }
+
+    // Tests for extract_public_decls
+    #[test]
+    fn test_extract_pub_fn() {
+        let source = r#"
+pub fn add(a: i32, b: i32) i32 {
+    return a + b;
+}
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["add"]);
+    }
+
+    #[test]
+    fn test_extract_pub_const() {
+        let source = r#"
+pub const MAX_SIZE: usize = 1024;
+pub const VERSION: []const u8 = "1.0.0";
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["MAX_SIZE", "VERSION"]);
+    }
+
+    #[test]
+    fn test_extract_pub_var() {
+        let source = r#"
+pub var counter: u32 = 0;
+pub var buffer: [256]u8 = undefined;
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["counter", "buffer"]);
+    }
+
+    #[test]
+    fn test_private_declarations_not_captured() {
+        let source = r#"
+fn private_fn() void {}
+const PRIVATE_CONST: u32 = 42;
+var private_var: i32 = 10;
+pub fn public_fn() void {}
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["public_fn"]);
+    }
+
+    #[test]
+    fn test_pub_in_line_comments_not_captured() {
+        let source = r#"
+// pub fn commented_out() void {}
+pub fn real_function() void {}
+// pub const COMMENTED_CONST: u32 = 42;
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["real_function"]);
+    }
+
+    #[test]
+    fn test_pub_in_block_comments_not_captured() {
+        let source = r#"
+/*
+pub fn commented_out() void {}
+pub const COMMENTED_CONST: u32 = 42;
+*/
+pub fn real_function() void {}
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["real_function"]);
+    }
+
+    #[test]
+    fn test_pub_in_strings_not_captured() {
+        let source = r#"
+const msg: []const u8 = "pub fn fake() void {}";
+pub fn real_function() void {}
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["real_function"]);
+    }
+
+    #[test]
+    fn test_mixed_declarations() {
+        let source = r#"
+pub fn add(a: i32, b: i32) i32 { return a + b; }
+pub const MAX_SIZE: usize = 1024;
+pub var counter: u32 = 0;
+fn private_fn() void {}
+const PRIVATE_CONST: u32 = 42;
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["add", "MAX_SIZE", "counter"]);
+    }
+
+    #[test]
+    fn test_various_formatting() {
+        let source = r#"
+pub fn func1() void {}
+pub  fn  func2() void {}
+    pub fn func3() void {}
+pub
+fn func4() void {}
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["func1", "func2", "func3", "func4"]);
+    }
+
+    #[test]
+    fn test_nested_and_complex_declarations() {
+        let source = r#"
+pub const Config = struct {
+    pub fn init() Config {
+        return Config{};
+    }
+    pub const DEFAULT_SIZE: usize = 100;
+};
+
+pub fn outer() void {
+    const inner_fn = struct {
+        pub fn nested() void {}
+    };
+}
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["Config", "init", "DEFAULT_SIZE", "outer", "nested"]);
+    }
+
+    #[test]
+    fn test_identifiers_with_underscores() {
+        let source = r#"
+pub fn some_func() void {}
+pub const SOME_CONST: u32 = 42;
+pub var some_var: i32 = 10;
+pub fn _private_convention() void {}
+pub const __double_underscore: u32 = 1;
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["some_func", "SOME_CONST", "some_var", "_private_convention", "__double_underscore"]);
+    }
+
+    #[test]
+    fn test_extract_public_decls_empty_source() {
+        let source = "";
+        let decls = extract_public_decls(source);
+        assert!(decls.is_empty());
+    }
+
+    #[test]
+    fn test_no_public_declarations() {
+        let source = r#"
+fn private1() void {}
+fn private2() void {}
+const CONST: u32 = 42;
+        "#;
+        let decls = extract_public_decls(source);
+        assert!(decls.is_empty());
+    }
+
+    #[test]
+    fn test_multiline_string_with_pub() {
+        let source = r#"
+const multiline =
+\\pub fn fake1() void {}
+\\pub const FAKE2: u32 = 42;
+;
+pub fn real_function() void {}
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["real_function"]);
+    }
+
+    #[test]
+    fn test_escaped_quotes_in_strings() {
+        let source = r#"
+const msg: []const u8 = "She said \"pub fn fake() void {}\"";
+pub fn real_function() void {}
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["real_function"]);
+    }
+
+    #[test]
+    fn test_doc_comments_with_pub() {
+        let source = r#"
+/// This is a doc comment about: pub fn fake() void {}
+pub fn real_function() void {}
+//! Another doc comment: pub const FAKE: u32 = 42;
+pub const REAL_CONST: u32 = 100;
+        "#;
+        let decls = extract_public_decls(source);
+        assert_eq!(decls, vec!["real_function", "REAL_CONST"]);
     }
 }

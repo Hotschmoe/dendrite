@@ -27,7 +27,7 @@ fn test_cli_json_output() {
     let fixtures = fixtures_path().join("simple");
 
     let output = Command::new(env!("CARGO_BIN_EXE_dendrite"))
-        .args(&[
+        .args([
             "--path",
             fixtures.to_str().unwrap(),
             "--json",
