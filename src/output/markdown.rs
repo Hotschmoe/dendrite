@@ -251,40 +251,25 @@ fn build_alerts(analysis: &AnalysisResult) -> Vec<Alert> {
     alerts
 }
 
+const LAYER_DEFINITIONS: &[(&str, &str, u8)] = &[
+    ("Entry", "Application entry point (main.zig)", 0),
+    ("App", "Application layer (shell/*, init.zig)", 1),
+    ("Core", "Core functionality (kernel/*, memory/*)", 2),
+    ("Platform", "Platform abstraction (platform/*, exceptions.zig)", 3),
+    ("Driver", "Device drivers (drivers/*)", 4),
+    ("Arch", "Architecture-specific code (arch/*)", 5),
+];
+
 /// Build layer definitions.
 fn build_layer_info() -> Vec<LayerInfo> {
-    vec![
-        LayerInfo {
-            name: "Entry".to_string(),
-            description: "Application entry point (main.zig)".to_string(),
-            precedence: 0,
-        },
-        LayerInfo {
-            name: "App".to_string(),
-            description: "Application layer (shell/*, init.zig)".to_string(),
-            precedence: 1,
-        },
-        LayerInfo {
-            name: "Core".to_string(),
-            description: "Core functionality (kernel/*, memory/*)".to_string(),
-            precedence: 2,
-        },
-        LayerInfo {
-            name: "Platform".to_string(),
-            description: "Platform abstraction (platform/*, exceptions.zig)".to_string(),
-            precedence: 3,
-        },
-        LayerInfo {
-            name: "Driver".to_string(),
-            description: "Device drivers (drivers/*)".to_string(),
-            precedence: 4,
-        },
-        LayerInfo {
-            name: "Arch".to_string(),
-            description: "Architecture-specific code (arch/*)".to_string(),
-            precedence: 5,
-        },
-    ]
+    LAYER_DEFINITIONS
+        .iter()
+        .map(|(name, description, precedence)| LayerInfo {
+            name: (*name).to_string(),
+            description: (*description).to_string(),
+            precedence: *precedence,
+        })
+        .collect()
 }
 
 /// Generate Mermaid flowchart diagram from dependency graph.
