@@ -14,5 +14,6 @@ pub mod discovery;
 
 // Re-export main types for convenience
 pub use graph::{DepGraph, FileNode, Layer};
+pub use graph::analysis::{analyze, find_cycles, AnalysisResult, Cycle, CycleEdge};
 pub use parser::ParseResult;
 pub use discovery::{DiscoveryConfig, discover_files, discover_and_parse};

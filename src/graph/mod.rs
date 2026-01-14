@@ -1,5 +1,7 @@
 //! Dependency graph construction and analysis.
 
+pub mod analysis;
+
 use petgraph::graph::{DiGraph, NodeIndex};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
