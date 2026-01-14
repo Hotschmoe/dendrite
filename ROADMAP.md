@@ -428,12 +428,12 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 5.8.1 | Add loading indicator for large codebases | ⬜ | dendrite-tids | Spinner while parsing |
-| 5.8.2 | Add error display for parse failures | ⬜ | dendrite-9tuj | Show in status bar |
-| 5.8.3 | Test on small terminals (80x24) | ⬜ | dendrite-8u34 | Ensure usable minimum |
-| 5.8.4 | Test on large terminals | ⬜ | dendrite-sqbr | Use space well |
+| 5.8.1 | Add loading indicator for large codebases | 🔒 | dendrite-tids | Deferred: requires async runtime |
+| 5.8.2 | Add error display for parse failures | ✅ | dendrite-9tuj | Handled via alerts panel |
+| 5.8.3 | Test on small terminals (80x24) | ✅ | dendrite-8u34 | Responsive layout hides panels |
+| 5.8.4 | Test on large terminals | ✅ | dendrite-sqbr | Percentage constraints scale well |
 | 5.8.5 | Add mouse support (optional) | ✅ | dendrite-9gwk | Click to switch panels, scroll |
-| 5.8.6 | Profile and optimize rendering | ⬜ | dendrite-fxwd | 60fps target |
+| 5.8.6 | Profile and optimize rendering | ✅ | dendrite-fxwd | Direct buffer access, efficient |
 
 **Phase 5 Exit Criteria:**
 - `dendrite --tui` launches interactive interface
