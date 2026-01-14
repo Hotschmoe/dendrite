@@ -254,43 +254,37 @@ fn run(cli: Cli) -> Result<()> {
         println!();
     }
 
-    // 4. Generate output
-    let wants_json = cli.json || cli.all;
-    let wants_markdown = cli.markdown || cli.all;
-
-    // Task 1.6.3: Create output directory if needed
-    if wants_json && !cli.output.exists() {
-        if cli.verbose {
-            println!("Creating output directory: {}", cli.output.display());
-        }
-        fs::create_dir_all(&cli.output)?;
-    }
-
-    // Task 1.6.2: Output JSON
-    if wants_json {
-        let json_path = cli.output.join("graph.json");
-        let codemap = CodebaseMap::from_graph(&graph, &project_root.to_string_lossy());
-        codemap.write_to_file(&json_path)?;
-
-        if !cli.quiet {
-            println!("JSON output written to: {}", json_path.display());
-        }
-    }
-
-    // 5. Run analysis
+    // 4. Run analysis (needed for markdown and CI mode)
     let analysis = analyze(&graph, 5); // threshold for high fan-in/out
 
-    // Markdown output (Phase 3)
-    if wants_markdown {
+    // 5. Generate outputs
+    let wants_json = cli.json || cli.all;
+    let wants_markdown = cli.markdown || cli.all;
+    let wants_output = wants_json || wants_markdown;
+
+    if wants_output {
         if !cli.output.exists() {
+            if cli.verbose {
+                println!("Creating output directory: {}", cli.output.display());
+            }
             fs::create_dir_all(&cli.output)?;
         }
 
         let codemap = CodebaseMap::from_graph(&graph, &project_root.to_string_lossy());
-        generate_codebase_md(&graph, &analysis, &codemap, &cli.output)?;
 
-        if !cli.quiet {
-            println!("Markdown output written to: {}", cli.output.join("CODEBASE.md").display());
+        if wants_json {
+            let json_path = cli.output.join("graph.json");
+            codemap.write_to_file(&json_path)?;
+            if !cli.quiet {
+                println!("JSON output written to: {}", json_path.display());
+            }
+        }
+
+        if wants_markdown {
+            generate_codebase_md(&graph, &analysis, &codemap, &cli.output)?;
+            if !cli.quiet {
+                println!("Markdown output written to: {}", cli.output.join("CODEBASE.md").display());
+            }
         }
     }
 
