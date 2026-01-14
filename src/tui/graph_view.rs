@@ -38,6 +38,50 @@ impl<'a> GraphView<'a> {
         cycle_nodes
     }
 
+    /// Determine if a node should be highlighted based on current view mode.
+    fn is_node_highlighted(&self, node_idx: NodeIndex) -> bool {
+        use super::app::ViewMode;
+        use petgraph::Direction;
+
+        match self.app.mode {
+            ViewMode::Normal => true,
+            ViewMode::Search => {
+                // Only highlight search results
+                self.app.search_results.contains(&node_idx)
+            }
+            ViewMode::Imports => {
+                // Highlight selected node and what it imports
+                if let Some(selected) = self.app.selected_node {
+                    if node_idx == selected {
+                        return true;
+                    }
+                    // Check if selected imports this node
+                    self.app
+                        .graph
+                        .neighbors_directed(selected, Direction::Outgoing)
+                        .any(|n| n == node_idx)
+                } else {
+                    false
+                }
+            }
+            ViewMode::Dependents => {
+                // Highlight selected node and what imports it
+                if let Some(selected) = self.app.selected_node {
+                    if node_idx == selected {
+                        return true;
+                    }
+                    // Check if this node imports selected
+                    self.app
+                        .graph
+                        .neighbors_directed(selected, Direction::Incoming)
+                        .any(|n| n == node_idx)
+                } else {
+                    false
+                }
+            }
+        }
+    }
+
     /// Draw a box for a file node.
     fn draw_node(
         &self,
@@ -51,14 +95,22 @@ impl<'a> GraphView<'a> {
         let node = &self.app.graph[node_idx];
         let is_selected = self.app.selected_node == Some(node_idx);
         let in_cycle = cycle_nodes.contains(&node.relative_path);
+        let is_highlighted = self.is_node_highlighted(node_idx);
+
+        // Dim non-highlighted nodes in special view modes
+        let is_dimmed = !is_highlighted && self.app.mode != super::app::ViewMode::Normal;
 
         // Determine box style
         let border_color = if in_cycle {
             Color::Red
         } else if is_selected {
             Color::Yellow
-        } else {
+        } else if is_dimmed {
+            Color::DarkGray
+        } else if self.app.show_layer_colors {
             layer_color(node.layer)
+        } else {
+            Color::Gray
         };
 
         let border_style = if is_selected {
@@ -76,6 +128,8 @@ impl<'a> GraphView<'a> {
                 .add_modifier(Modifier::BOLD)
         } else if in_cycle {
             Style::default().fg(Color::Red)
+        } else if is_dimmed {
+            Style::default().fg(Color::DarkGray)
         } else {
             Style::default().fg(Color::White)
         };

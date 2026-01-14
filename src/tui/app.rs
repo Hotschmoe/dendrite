@@ -55,6 +55,16 @@ pub struct App {
     pub details_scroll: usize,
     /// Selected alert index in alerts panel
     pub selected_alert: usize,
+    /// Whether to show the help overlay
+    pub show_help: bool,
+    /// Whether to show layer colors (for accessibility)
+    pub show_layer_colors: bool,
+    /// Search query text
+    pub search_query: String,
+    /// Search results (node indices matching query)
+    pub search_results: Vec<NodeIndex>,
+    /// Current position in cycle navigation
+    pub cycle_index: usize,
 }
 
 impl App {
@@ -77,6 +87,11 @@ impl App {
             viewport_offset: (0, 0),
             details_scroll: 0,
             selected_alert: 0,
+            show_help: false,
+            show_layer_colors: true,
+            search_query: String::new(),
+            search_results: Vec::new(),
+            cycle_index: 0,
         }
     }
 
@@ -233,6 +248,133 @@ impl App {
                     self.panel = ActivePanel::Graph;
                 }
             }
+        }
+    }
+
+    /// Toggle help overlay.
+    pub fn toggle_help(&mut self) {
+        self.show_help = !self.show_help;
+    }
+
+    /// Toggle layer colors.
+    pub fn toggle_layer_colors(&mut self) {
+        self.show_layer_colors = !self.show_layer_colors;
+    }
+
+    /// Enter imports view mode.
+    pub fn enter_imports_mode(&mut self) {
+        if self.mode == ViewMode::Imports {
+            self.mode = ViewMode::Normal;
+        } else {
+            self.mode = ViewMode::Imports;
+        }
+    }
+
+    /// Enter dependents view mode.
+    pub fn enter_dependents_mode(&mut self) {
+        if self.mode == ViewMode::Dependents {
+            self.mode = ViewMode::Normal;
+        } else {
+            self.mode = ViewMode::Dependents;
+        }
+    }
+
+    /// Enter search mode.
+    pub fn enter_search_mode(&mut self) {
+        self.mode = ViewMode::Search;
+        self.search_query.clear();
+        self.search_results.clear();
+    }
+
+    /// Exit search mode.
+    pub fn exit_search_mode(&mut self) {
+        self.mode = ViewMode::Normal;
+        self.search_query.clear();
+        self.search_results.clear();
+    }
+
+    /// Handle character input in search mode.
+    pub fn search_input(&mut self, c: char) {
+        self.search_query.push(c);
+        self.update_search_results();
+    }
+
+    /// Handle backspace in search mode.
+    pub fn search_backspace(&mut self) {
+        self.search_query.pop();
+        self.update_search_results();
+    }
+
+    /// Update search results based on current query.
+    fn update_search_results(&mut self) {
+        if self.search_query.is_empty() {
+            self.search_results.clear();
+            return;
+        }
+
+        let query = self.search_query.to_lowercase();
+        self.search_results = self
+            .graph
+            .node_indices()
+            .filter(|&idx| {
+                self.graph[idx]
+                    .relative_path
+                    .to_lowercase()
+                    .contains(&query)
+            })
+            .collect();
+
+        // Select first search result if available
+        if !self.search_results.is_empty() {
+            self.selected_node = Some(self.search_results[0]);
+        }
+    }
+
+    /// Select search result and exit search mode.
+    pub fn select_search_result(&mut self) {
+        if !self.search_results.is_empty() && self.selected_node.is_some() {
+            self.exit_search_mode();
+            self.panel = ActivePanel::Details;
+        }
+    }
+
+    /// Jump to next cycle node.
+    pub fn jump_to_next_cycle(&mut self) {
+        if self.analysis.cycles.is_empty() {
+            return;
+        }
+
+        // Collect all nodes that are in cycles
+        let mut cycle_nodes: Vec<String> = Vec::new();
+        for cycle in &self.analysis.cycles {
+            for node in &cycle.nodes {
+                if !cycle_nodes.contains(node) {
+                    cycle_nodes.push(node.clone());
+                }
+            }
+        }
+
+        if cycle_nodes.is_empty() {
+            return;
+        }
+
+        // Move to next cycle node
+        self.cycle_index = (self.cycle_index + 1) % cycle_nodes.len();
+        let target_file = &cycle_nodes[self.cycle_index];
+
+        // Find and select the node
+        if let Some(idx) = self.graph.node_indices()
+            .find(|&idx| &self.graph[idx].relative_path == target_file) {
+            self.selected_node = Some(idx);
+            self.panel = ActivePanel::Graph;
+        }
+    }
+
+    /// Switch to Details panel (for Enter key).
+    pub fn switch_to_details(&mut self) {
+        if self.selected_node.is_some() {
+            self.panel = ActivePanel::Details;
+            self.details_scroll = 0;
         }
     }
 }

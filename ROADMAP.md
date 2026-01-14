@@ -381,23 +381,23 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 5.4.1 | Display selected file metadata | ⬜ | dendrite-gfg6 | Path, layer, depth, loc |
-| 5.4.2 | Display imports list | ⬜ | dendrite-n3ml | Scrollable if long |
-| 5.4.3 | Display dependents list | ⬜ | dendrite-xjw9 | Who imports this file |
-| 5.4.4 | Display exports list | ⬜ | dendrite-w8dz | Public API |
-| 5.4.5 | Display doc comment/summary | ⬜ | dendrite-ezs6 | If available |
-| 5.4.6 | Highlight if file is in a cycle | ⬜ | dendrite-yi41 | Warning banner |
+| 5.4.1 | Display selected file metadata | ✅ | dendrite-gfg6 | Path, layer, depth, loc |
+| 5.4.2 | Display imports list | ✅ | dendrite-n3ml | Scrollable if long |
+| 5.4.3 | Display dependents list | ✅ | dendrite-xjw9 | Who imports this file |
+| 5.4.4 | Display exports list | ✅ | dendrite-w8dz | Public API |
+| 5.4.5 | Display doc comment/summary | ✅ | dendrite-ezs6 | If available |
+| 5.4.6 | Highlight if file is in a cycle | ✅ | dendrite-yi41 | Warning banner |
 
 ### Milestone 5.5: Alerts Panel
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 5.5.1 | List all cycles with file names | ⬜ | dendrite-osn0 | Clickable to jump to graph |
-| 5.5.2 | List all layer violations | ⬜ | dendrite-y7c2 | With explanations |
-| 5.5.3 | List threshold warnings | ⬜ | dendrite-8wu0 | High fan-out, etc. |
-| 5.5.4 | Show fix suggestions | ⬜ | dendrite-pnho | Inline help |
-| 5.5.5 | Navigate alerts with j/k | ⬜ | dendrite-q6uv | Vim-style |
-| 5.5.6 | Press Enter to jump to file | ⬜ | dendrite-jxtd | Switch to graph, select node |
+| 5.5.1 | List all cycles with file names | ✅ | dendrite-osn0 | Clickable to jump to graph |
+| 5.5.2 | List all layer violations | ✅ | dendrite-y7c2 | With explanations |
+| 5.5.3 | List threshold warnings | ✅ | dendrite-8wu0 | High fan-out, etc. |
+| 5.5.4 | Show fix suggestions | ✅ | dendrite-pnho | Inline help |
+| 5.5.5 | Navigate alerts with j/k | ✅ | dendrite-q6uv | Vim-style |
+| 5.5.6 | Press Enter to jump to file | ✅ | dendrite-jxtd | Switch to graph, select node |
 
 ### Milestone 5.6: Navigation
 
@@ -405,24 +405,24 @@ This roadmap breaks development into phases, milestones, and atomic tasks. Each 
 |----|------|--------|------|-------|
 | 5.6.1 | Implement j/k and arrow key movement | ✅ | dendrite-h1wx | Arrow keys: up/down for layer, left/right for depth |
 | 5.6.2 | Implement Tab to switch panels | ✅ | dendrite-j0w5 | Already implemented in 5.2 |
-| 5.6.3 | Implement Enter to select/expand | ⬜ | dendrite-3ni7 | Context-dependent action |
-| 5.6.4 | Implement 'd' for dependents mode | ⬜ | dendrite-37mg | Highlight what imports this |
-| 5.6.5 | Implement 'i' for imports mode | ⬜ | dendrite-euna | Highlight what this imports |
+| 5.6.3 | Implement Enter to select/expand | ✅ | dendrite-3ni7 | Context-dependent action |
+| 5.6.4 | Implement 'd' for dependents mode | ✅ | dendrite-37mg | Highlight what imports this (bound to 'w') |
+| 5.6.5 | Implement 'i' for imports mode | ✅ | dendrite-euna | Highlight what this imports |
 | 5.6.6 | Implement 'p' for path trace | ⬜ | dendrite-mok0 | Show path to entry point |
-| 5.6.7 | Implement 'c' to jump to next cycle | ⬜ | dendrite-rgsi | Quick cycle navigation |
-| 5.6.8 | Implement 'l' to toggle layer colors | ⬜ | dendrite-lmmf | On/off for accessibility |
-| 5.6.9 | Implement '/' for search | ⬜ | dendrite-peht | Filter files by name |
-| 5.6.10 | Implement '?' for help overlay | ⬜ | dendrite-32rq | Keybinding reference |
+| 5.6.7 | Implement 'c' to jump to next cycle | ✅ | dendrite-rgsi | Quick cycle navigation |
+| 5.6.8 | Implement 'l' to toggle layer colors | ✅ | dendrite-lmmf | On/off for accessibility |
+| 5.6.9 | Implement '/' for search | ✅ | dendrite-peht | Filter files by name |
+| 5.6.10 | Implement '?' for help overlay | ✅ | dendrite-32rq | Keybinding reference |
 
 ### Milestone 5.7: Search
 
 | ID | Task | Status | Bead | Notes |
 |----|------|--------|------|-------|
-| 5.7.1 | Implement search input field | ⬜ | dendrite-frw3 | Text input at bottom |
-| 5.7.2 | Implement fuzzy matching | ⬜ | dendrite-ndey | Match partial filenames |
-| 5.7.3 | Show search results as filtered list | ⬜ | dendrite-nji3 | Update as you type |
-| 5.7.4 | Jump to selected result | ⬜ | dendrite-7cwk | Enter selects, Esc cancels |
-| 5.7.5 | Highlight matches in graph | ⬜ | dendrite-o93b | Dim non-matching nodes |
+| 5.7.1 | Implement search input field | ✅ | dendrite-frw3 | Text input at bottom |
+| 5.7.2 | Implement fuzzy matching | ✅ | dendrite-ndey | Match partial filenames |
+| 5.7.3 | Show search results as filtered list | ✅ | dendrite-nji3 | Update as you type |
+| 5.7.4 | Jump to selected result | ✅ | dendrite-7cwk | Enter selects, Esc cancels |
+| 5.7.5 | Highlight matches in graph | ✅ | dendrite-o93b | Dim non-matching nodes |
 
 ### Milestone 5.8: Polish
 

@@ -7,6 +7,36 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 /// Handle a keyboard event and update the app state.
 pub fn handle_key_event(app: &mut App, key: KeyEvent) {
+    use super::app::ViewMode;
+
+    // Handle help overlay first (it overlays everything)
+    if app.show_help {
+        if matches!(key.code, KeyCode::Char('?') | KeyCode::Esc | KeyCode::Char('q')) {
+            app.toggle_help();
+        }
+        return;
+    }
+
+    // Handle search mode
+    if app.mode == ViewMode::Search {
+        match key.code {
+            KeyCode::Char(c) => {
+                app.search_input(c);
+            }
+            KeyCode::Backspace => {
+                app.search_backspace();
+            }
+            KeyCode::Enter => {
+                app.select_search_result();
+            }
+            KeyCode::Esc => {
+                app.exit_search_mode();
+            }
+            _ => {}
+        }
+        return;
+    }
+
     match key.code {
         // Quit
         KeyCode::Char('q') | KeyCode::Char('Q') => {
@@ -16,17 +46,40 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) {
             app.quit();
         }
         KeyCode::Esc => {
-            app.quit();
+            // Exit special modes
+            if app.mode != ViewMode::Normal {
+                app.mode = ViewMode::Normal;
+            } else {
+                app.quit();
+            }
+        }
+
+        // Help overlay
+        KeyCode::Char('?') => {
+            app.toggle_help();
         }
 
         // Panel switching
-        KeyCode::Char('g') | KeyCode::Char('G') => {
+        KeyCode::Char('g') if !key.modifiers.contains(KeyModifiers::SHIFT) => {
             app.panel = ActivePanel::Graph;
         }
-        KeyCode::Char('d') | KeyCode::Char('D') => {
+        KeyCode::Char('G') => {
+            app.panel = ActivePanel::Graph;
+        }
+        KeyCode::Char('d') if !key.modifiers.contains(KeyModifiers::SHIFT) => {
+            // In normal mode, 'd' switches to Details panel
+            // But we need to handle ViewMode::Dependents separately
+            if app.mode == ViewMode::Normal {
+                app.panel = ActivePanel::Details;
+            }
+        }
+        KeyCode::Char('D') => {
             app.panel = ActivePanel::Details;
         }
-        KeyCode::Char('a') | KeyCode::Char('A') => {
+        KeyCode::Char('a') if !key.modifiers.contains(KeyModifiers::SHIFT) => {
+            app.panel = ActivePanel::Alerts;
+        }
+        KeyCode::Char('A') => {
             app.panel = ActivePanel::Alerts;
         }
 
@@ -65,15 +118,43 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) {
             }
         }
 
-        // Enter key: Jump to file from alert
+        // Enter key
         KeyCode::Enter => {
-            if app.panel == ActivePanel::Alerts {
-                app.jump_to_selected_alert();
+            match app.panel {
+                ActivePanel::Alerts => app.jump_to_selected_alert(),
+                ActivePanel::Graph => app.switch_to_details(),
+                _ => {}
             }
         }
 
+        // View modes
+        KeyCode::Char('i') | KeyCode::Char('I') => {
+            app.enter_imports_mode();
+        }
+        // Note: 'd' conflicts with Details panel switch
+        // We handle dependents mode with Shift+D in a custom way
+        // Using 'w' (who imports this) for dependents instead
+        KeyCode::Char('w') | KeyCode::Char('W') => {
+            app.enter_dependents_mode();
+        }
+
+        // Search mode
+        KeyCode::Char('/') => {
+            app.enter_search_mode();
+        }
+
+        // Cycle navigation
+        KeyCode::Char('c') if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+            app.jump_to_next_cycle();
+        }
+
+        // Toggle layer colors
+        KeyCode::Char('l') | KeyCode::Char('L') => {
+            app.toggle_layer_colors();
+        }
+
         _ => {
-            // Other keys will be handled in future milestones
+            // Unhandled keys are ignored
         }
     }
 }

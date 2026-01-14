@@ -18,13 +18,23 @@ use ratatui::{
 pub fn render(f: &mut Frame, app: &App) {
     let size = f.area();
 
-    // Split vertically: tab bar + main content + status bar
-    let main_chunks = Layout::vertical([
-        Constraint::Length(1), // Tab bar
-        Constraint::Min(3),    // Main content area
-        Constraint::Length(1), // Status bar
-    ])
-    .split(size);
+    // Split vertically: tab bar + main content + status bar + search bar (if active)
+    let main_chunks = if app.mode == ViewMode::Search {
+        Layout::vertical([
+            Constraint::Length(1), // Tab bar
+            Constraint::Min(3),    // Main content area
+            Constraint::Length(1), // Status bar
+            Constraint::Length(1), // Search bar
+        ])
+        .split(size)
+    } else {
+        Layout::vertical([
+            Constraint::Length(1), // Tab bar
+            Constraint::Min(3),    // Main content area
+            Constraint::Length(1), // Status bar
+        ])
+        .split(size)
+    };
 
     // Render tab bar at top
     render_tab_bar(f, app, main_chunks[0]);
@@ -57,6 +67,16 @@ pub fn render(f: &mut Frame, app: &App) {
 
     // Render status bar at bottom
     render_status_bar(f, app, main_chunks[2]);
+
+    // Render search bar if in search mode
+    if app.mode == ViewMode::Search {
+        render_search_bar(f, app, main_chunks[3]);
+    }
+
+    // Render help overlay on top if active
+    if app.show_help {
+        render_help_overlay(f, app, size);
+    }
 }
 
 /// Render the tab bar for panel switching.
@@ -477,17 +497,33 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         app.graph.edge_count()
     );
 
-    // Center: alert summary
-    let center_text = if total_issues > 0 {
-        format!("{} cycles, {} violations", cycles, violations)
-    } else {
-        "No issues".to_string()
-    };
-
-    let center_style = if total_issues > 0 {
-        Style::default().fg(Color::Red).bold()
-    } else {
-        Style::default().fg(Color::Green)
+    // Center: alert summary or mode indicator
+    let (center_text, center_style) = match app.mode {
+        ViewMode::Normal => {
+            if total_issues > 0 {
+                (
+                    format!("{} cycles, {} violations", cycles, violations),
+                    Style::default().fg(Color::Red).bold(),
+                )
+            } else {
+                (
+                    "No issues".to_string(),
+                    Style::default().fg(Color::Green),
+                )
+            }
+        }
+        ViewMode::Imports => (
+            "Mode: IMPORTS".to_string(),
+            Style::default().fg(Color::Cyan).bold(),
+        ),
+        ViewMode::Dependents => (
+            "Mode: DEPENDENTS".to_string(),
+            Style::default().fg(Color::Magenta).bold(),
+        ),
+        ViewMode::Search => (
+            "Mode: SEARCH".to_string(),
+            Style::default().fg(Color::Yellow).bold(),
+        ),
     };
 
     // Right: help hint
@@ -517,6 +553,90 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     let paragraph = Paragraph::new(status_line);
 
     f.render_widget(paragraph, area);
+}
+
+/// Render the search bar at the bottom.
+fn render_search_bar(f: &mut Frame, app: &App, area: Rect) {
+    let search_text = format!(
+        "Search: {} ({} results)",
+        app.search_query,
+        app.search_results.len()
+    );
+
+    let paragraph = Paragraph::new(search_text)
+        .style(Style::default().fg(Color::Yellow).bg(Color::DarkGray));
+
+    f.render_widget(paragraph, area);
+}
+
+/// Render the help overlay.
+fn render_help_overlay(f: &mut Frame, _app: &App, area: Rect) {
+    // Calculate centered popup area
+    let popup_width = area.width.min(80);
+    let popup_height = area.height.min(30);
+    let x = (area.width.saturating_sub(popup_width)) / 2;
+    let y = (area.height.saturating_sub(popup_height)) / 2;
+
+    let popup_area = Rect {
+        x: area.x + x,
+        y: area.y + y,
+        width: popup_width,
+        height: popup_height,
+    };
+
+    // Help content
+    let help_lines = vec![
+        Line::from(""),
+        Line::from(Span::styled(
+            "DENDRITE - KEYBOARD SHORTCUTS",
+            Style::default().fg(Color::Yellow).bold(),
+        )),
+        Line::from(""),
+        Line::from(Span::styled("Navigation:", Style::default().bold())),
+        Line::from("  Arrow keys / j/k  Navigate nodes in current layer"),
+        Line::from("  Left/Right        Move between layers"),
+        Line::from("  Enter             View file details (from Graph)"),
+        Line::from("  Tab               Cycle through panels"),
+        Line::from(""),
+        Line::from(Span::styled("Panels:", Style::default().bold())),
+        Line::from("  g                 Go to Graph panel"),
+        Line::from("  d                 Go to Details panel"),
+        Line::from("  a                 Go to Alerts panel"),
+        Line::from(""),
+        Line::from(Span::styled("View Modes:", Style::default().bold())),
+        Line::from("  i                 Toggle Imports mode (highlight what file imports)"),
+        Line::from("  w                 Toggle Dependents mode (who imports this file)"),
+        Line::from("  /                 Enter search mode"),
+        Line::from("  Esc               Exit view mode / Return to normal"),
+        Line::from(""),
+        Line::from(Span::styled("Special Navigation:", Style::default().bold())),
+        Line::from("  c                 Jump to next cycle node"),
+        Line::from(""),
+        Line::from(Span::styled("Display:", Style::default().bold())),
+        Line::from("  l                 Toggle layer colors"),
+        Line::from("  ?                 Toggle this help"),
+        Line::from(""),
+        Line::from(Span::styled("Quit:", Style::default().bold())),
+        Line::from("  q / Esc           Quit application"),
+        Line::from("  Ctrl+C            Force quit"),
+        Line::from(""),
+        Line::from(Span::styled(
+            "Press ? or Esc to close this help",
+            Style::default().fg(Color::Gray),
+        )),
+    ];
+
+    let block = Block::default()
+        .title(" Help ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Yellow))
+        .style(Style::default().bg(Color::Black));
+
+    let paragraph = Paragraph::new(help_lines).block(block);
+
+    // Clear the area behind the popup
+    f.render_widget(ratatui::widgets::Clear, popup_area);
+    f.render_widget(paragraph, popup_area);
 }
 
 /// Get the color for a layer.
