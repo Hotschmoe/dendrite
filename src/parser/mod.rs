@@ -2,7 +2,9 @@
 
 mod zig;
 
-pub use zig::{extract_imports, ZigFile, ZigImport};
+pub use zig::{
+    extract_doc_comment, extract_imports, extract_public_decls, parse_file, ZigFile, ZigImport,
+};
 
 /// Result of parsing a source file.
 #[derive(Debug, Clone)]
