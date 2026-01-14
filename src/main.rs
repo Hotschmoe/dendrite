@@ -9,6 +9,7 @@ use dendrite::discovery::{discover_files, DiscoveryConfig, ParseError};
 use dendrite::graph::analysis::{analyze, AnalysisResult};
 use dendrite::graph::{FileNode, GraphBuilder, Layer};
 use dendrite::output::json::CodebaseMap;
+use dendrite::output::markdown::generate_codebase_md;
 use dendrite::parser::{parse_file, parse_rust_file};
 
 #[derive(Parser, Debug)]
@@ -276,13 +277,22 @@ fn run(cli: Cli) -> Result<()> {
         }
     }
 
-    // Markdown output (Phase 3 - not yet implemented)
-    if wants_markdown && !cli.quiet {
-        eprintln!("Markdown output not yet implemented (Phase 3)");
-    }
-
-    // 5. Run analysis if needed (CI mode or summary)
+    // 5. Run analysis
     let analysis = analyze(&graph, 5); // threshold for high fan-in/out
+
+    // Markdown output (Phase 3)
+    if wants_markdown {
+        if !cli.output.exists() {
+            fs::create_dir_all(&cli.output)?;
+        }
+
+        let codemap = CodebaseMap::from_graph(&graph, &project_root.to_string_lossy());
+        generate_codebase_md(&graph, &analysis, &codemap, &cli.output)?;
+
+        if !cli.quiet {
+            println!("Markdown output written to: {}", cli.output.join("CODEBASE.md").display());
+        }
+    }
 
     // CI mode: --check and --strict
     if cli.check || cli.strict {
